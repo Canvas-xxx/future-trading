@@ -88,8 +88,8 @@ def run_ordinary_task():
             cancel_unused_order(exchange, position)
     print("\n""##########################")
 
-while True: 
-    print("############ Looping ############")
+if __name__ == "__main__":
+    print("############ Schedule ############")
     utc = moment.utcnow().zero.date
     now = moment.utcnow().format("HH-mm")
     now_hh = int(now.split('-')[0])
@@ -111,8 +111,34 @@ while True:
             times = times + 1
             if times >= circle:
                 not_yet = False
+    print("\n""############ End Schedule ############")
+
+
+# while True: 
+#     print("############ Looping ############")
+#     utc = moment.utcnow().zero.date
+#     now = moment.utcnow().format("HH-mm")
+#     now_hh = int(now.split('-')[0])
+#     now_mm = int(now.split('-')[1])
     
-    sleep = 60
-    print("\n""Sleep",sleep,"sec.")
-    time.sleep(sleep) # Delay for 1 minute (60 seconds).
-    print("\n""############ End Looping ############")
+#     times = 0
+#     circle = 6
+#     not_yet = True
+    
+#     while not_yet:
+#         t = moment.date(utc).add(hour=(times*4)).format("HH-mm")
+#         t_hh = int(t.split('-')[0])
+#         t_mm = int(t.split('-')[1])
+        
+#         if now_hh == t_hh and now_mm < 1:
+#             run_ordinary_task()
+#             not_yet = False
+#         else:
+#             times = times + 1
+#             if times >= circle:
+#                 not_yet = False
+    
+#     sleep = 60
+#     print("\n""Sleep",sleep,"sec.")
+#     time.sleep(sleep) # Delay for 1 minute (60 seconds).
+#     print("\n""############ End Looping ############")
