@@ -1,11 +1,11 @@
-# import ccxt
-# import time
+import ccxt
+import time
 import moment
-# import pprint36 as pprint
-# import settings as ENV
-# from signal import detect_signal_sign, find_signal_sign
-# from wallet_information import get_position_size, get_usdt_balance, get_positions_list
-# from markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order
+import pprint36 as pprint
+import settings as ENV
+from signal import detect_signal_sign, find_signal_sign
+from wallet_information import get_position_size, get_usdt_balance, get_positions_list
+from markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order
 
 # API_KEY = ENV.API_KEY
 # SECRET_KEY = ENV.SECRET_KEY
