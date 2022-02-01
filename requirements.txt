@@ -1,6 +1,6 @@
 ccxt
 pandas
-pandas_ta==0.3.14
+pandas_ta==0.3.2b0
 pprint36
 moment
 python-dotenv
