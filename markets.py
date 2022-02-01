@@ -17,7 +17,7 @@ def get_market_list(exchange):
         
     sorted_markets = df_markets.sort_values(by="volume", ascending=False)
     
-    return sorted_markets.to_dict('records')[0:50]
+    return sorted_markets.to_dict('records')[0:100]
 
 def set_pair_leverage(exchange, pair, leverage):
     exchange.set_leverage(leverage, pair)
