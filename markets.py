@@ -29,11 +29,11 @@ def get_amount_from_quote(exchange, symbol, quote_amount):
 
 def create_stop_loss_order(exchange, symbol, side, amount, stop_loss):
     quote_amount = get_amount_from_quote(exchange, symbol, amount)
-    print("\n""####### Create Order #####", symbol)
-    print("\n""Symbol", symbol)
-    print("\n""Side", side)
-    print("\n""Amount", amount)
-    print("\n""Quote Amount", quote_amount)
+    print("\n""####### Create Order ########")
+    print("Symbol", symbol)
+    print("Side", side)
+    print("Amount", amount)
+    print("Quota Amount", quote_amount)
     try:
         order = exchange.create_order(symbol, 'market', side, quote_amount)
         order_price = order['price']
@@ -49,6 +49,7 @@ def create_stop_loss_order(exchange, symbol, side, amount, stop_loss):
         print('---------------------------')
     except:
         print("Balance insufficient")
+        print('---------------------------')
     
     try:
         stop_loss_percentage = 0
@@ -69,6 +70,7 @@ def create_stop_loss_order(exchange, symbol, side, amount, stop_loss):
         print('---------------------------')
     except:
         print("Stop Loss Error")
+        print('---------------------------')
 
     try:
         tp_params = {'stopPrice': order_price * tp_percentage}
@@ -78,17 +80,23 @@ def create_stop_loss_order(exchange, symbol, side, amount, stop_loss):
         print('---------------------------')
     except:
         print("Take Profit Error")
-    
-def cancel_unused_order(exchange, symbol):
-    order_type = ['TAKE_PROFIT_MARKET', 'STOP_MARKET']
-    orders = exchange.fetch_orders(symbol)
-    filtered_orders = list(
-            filter(
-                lambda order: order.get('info').get('origType') in order_type,
-                orders
-            )
-        )
+        print('---------------------------')
 
-    for order in filtered_orders:
-        exchange.cancel_order(order.get('info').get('orderId'), order.get('symbol'))
-        print("Symbol", order.get('symbol'))
+    print("\n""#######---------------########")
+    
+def cancel_unused_order(exchange, positions):
+    print("\n""####### Cancel Orders #####")
+
+    markets = get_market_list(exchange)
+
+    positions_symbol = list(map(lambda position: position.get('symbol'), positions)) 
+    markets_symbol = list(map(lambda market: market.get('symbol'), markets))
+    exclude_symbol = list(filter(lambda sym: sym not in positions_symbol, markets_symbol))
+    for sym in exclude_symbol:
+        orders = exchange.fetch_orders(sym)
+        if len(orders) > 0:
+            print(sym)
+            exchange.cancel_all_orders(sym)
+
+    print("##########################")
+

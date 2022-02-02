@@ -19,29 +19,28 @@ exchange = ccxt.binanceusdm({
     }
 })
 
-# กำหนดตัวแปร ที่ต้องใช้
-timeframe = "4h" # ช่วงเวลาของกราฟที่จะดึงข้อมูล 1m 5m 1h 4h 1d
-limit = 100 # ให้ดึงข้อมูลมากี่แถว ย้อนหลังกี่แทง
-leverage = 3
-risk_of_ruin = 2
+timeframe = "4h" # Ex. 5m 15m 1h 4h 1d
+limit = 100 # Candle limit
+leverage = 3 # Multiple
+risk_of_ruin = 2 # Percentage of position
 stop_loss_percentage = 2
 
 def run_ordinary_task():
+    print("\n""######################")
     balance = get_usdt_balance(exchange) 
-    print("\n""####### Balance #####")
-    pprint.pprint(balance)
-    print("\n""##########################")
+    print("Balance", balance)
+    print("######################")
 
+    print("\n""##########################")
     position_size = get_position_size(balance, risk_of_ruin, stop_loss_percentage, leverage)
-    print("\n""####### Position Size #####")
-    print(position_size)
-    print("\n""##########################")
+    print("Position Size", position_size)
+    print("##########################")
 
+    print("\n""####### Current Positions List #####")
     positions = get_positions_list(exchange)
-    print("\n""####### Positions List #####")
     positions_symbol = list(map(lambda position: position.get('symbol'), positions)) 
     pprint.pprint(positions_symbol)
-    print("\n""##########################")
+    print("##########################")
 
     markets = get_market_list(exchange)
     none_position_market = list(filter(lambda market: market.get('symbol') not in positions_symbol, markets))
@@ -51,8 +50,9 @@ def run_ordinary_task():
         Trend, Signal = find_signal_sign(exchange, market.get('symbol'), timeframe, limit)
 
         set_pair_leverage(exchange, market.get('symbol'), leverage)
-        print("\n""Symbol", market.get('symbol'))
-        print("\n", Trend)
+        print("$$$$$$$$$$$$$$$$$$$$$$$$$$")
+        print("Symbol", market.get('symbol'))
+        print("Trend", Trend)
         if Signal  == "Buy_Signal":
             print("BUY-Trade")
             create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage)
@@ -63,30 +63,21 @@ def run_ordinary_task():
     
         else:
             print("Non-Trade")
-    print("\n""##########################")
+        print("$$$$$$$$$$$$$$$$$$$$$$$$$$")
+    print("##########################")
 
     print("\n""####### Positions Stop Loss #####")
     for position in positions:
         detect_signal = detect_signal_sign(exchange, position.get('symbol'), timeframe, limit)
         if position.get('side') == "long" and detect_signal == "SELL_POSITION":
-            print("Stop-Loss-Position-Long")
-            exchange.create_order(position.get('symbol'), 'market', 'sell', position.get('contracts'))
+            print("Stop-Loss-Position-Long", position.get('symbol'))
+            exchange.create_order(position.get('symbol'), 'market', 'sell', float(position.get('contracts')))
         elif position.get('side') == "short" and detect_signal == "BUY_POSITION":
-            print("Stop-Loss-Position-Short")
-            exchange.create_order(position.get('symbol'), 'market', 'buy', position.get('contracts'))
+            print("Stop-Loss-Position-Short", position.get('symbol'))
+            exchange.create_order(position.get('symbol'), 'market', 'buy', float(position.get('contracts')))
         else:
             print("HOLD-Position", position.get('symbol'))
-    print("\n""##########################")
-
-
-    print("\n""####### Cancel Orders #####")
-    new_positions = get_positions_list(exchange)
-    new_positions_symbol = list(map(lambda position: position.get('symbol'), new_positions)) 
-    pprint.pprint(new_positions_symbol)
-    for position in positions_symbol:
-        if position not in new_positions_symbol:
-            cancel_unused_order(exchange, position)
-    print("\n""##########################")
+    print("##########################")
 
 if __name__ == "__main__":
     print("############ Schedule ############")
@@ -111,4 +102,7 @@ if __name__ == "__main__":
             times = times + 1
             if times >= circle:
                 not_yet = False
+
+    positions = get_positions_list(exchange)
+    cancel_unused_order(exchange, positions)
     print("\n""############ End Schedule ############")
