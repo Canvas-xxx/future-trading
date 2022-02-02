@@ -80,7 +80,7 @@ def run_ordinary_task():
     print("##########################")
 
 if __name__ == "__main__":
-    print("############ Schedule ############", moment.now().format("YYYY-MM-DD HH:mm:ss"))
+    print("############ Schedule ############", moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"))
     utc = moment.utcnow().zero.date
     now = moment.utcnow().format("HH-mm")
     now_hh = int(now.split('-')[0])
