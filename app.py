@@ -85,6 +85,9 @@ if __name__ == "__main__":
     now = moment.utcnow().format("HH-mm")
     now_hh = int(now.split('-')[0])
     now_mm = int(now.split('-')[1])
+
+    print(utc)
+    print(now)
     
     times = 0
     circle = 6
