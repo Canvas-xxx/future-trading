@@ -1,12 +1,12 @@
+from apscheduler.schedulers.blocking import BlockingScheduler
 import ccxt
 import time
 import moment
 import pprint36 as pprint
 import settings as ENV
-from apscheduler.schedulers.blocking import BlockingScheduler
-from signal import detect_signal_sign, find_signal_sign
-from wallet_information import get_position_size, get_usdt_balance, get_positions_list
-from markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order
+from services.signal import detect_signal_sign, find_signal_sign
+from services.wallet_information import get_position_size, get_usdt_balance, get_positions_list
+from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
