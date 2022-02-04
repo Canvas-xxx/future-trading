@@ -136,8 +136,8 @@ if __name__ == "__main__":
         wake_up_duration = duration - 1
     else:
         wake_up_duration = duration
-    scheduler.add_job(wake_up_job, 'cron', hour='*/' + str(wake_up_duration), minute='59', second='40', timezone="Africa/Abidjan")
-    scheduler.add_job(schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(wake_up_job, 'cron', hour='*/' + str(wake_up_duration), minute='59', second='45', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='5', timezone="Africa/Abidjan")
 
     try:
         scheduler.start()
