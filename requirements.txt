@@ -1,5 +1,5 @@
 ccxt
-pandas
+pandas==1.4.0
 pandas_ta==0.3.14b0
 pprint36
 moment
