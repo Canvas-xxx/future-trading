@@ -27,7 +27,7 @@ def get_amount_from_quote(exchange, symbol, quote_amount):
     price = ticker.get('close')
     return quote_amount / price
 
-def create_stop_loss_order(exchange, symbol, side, amount, stop_loss):
+def create_stop_loss_order(exchange, symbol, side, amount, stop_loss, tp):
     quote_amount = get_amount_from_quote(exchange, symbol, amount)
     print("\n""####### Create Order ########")
     print("Symbol", symbol)
@@ -57,11 +57,11 @@ def create_stop_loss_order(exchange, symbol, side, amount, stop_loss):
 
         if side == "buy":
             stop_loss_percentage = 1 - (stop_loss / 100)
-            tp_percentage = 1 + ((stop_loss * 3) / 100)
+            tp_percentage = 1 + (tp / 100)
             tp_sl_side = "sell"
         else:
             stop_loss_percentage = 1 + (stop_loss / 100)
-            tp_percentage = 1 - ((stop_loss * 3) / 100)
+            tp_percentage = 1 - (tp / 100)
             tp_sl_side = "buy"
         stop_loss_params = {'stopPrice': order_price * stop_loss_percentage} 
         stop_order = exchange.create_order(symbol, 'stop_market', tp_sl_side, quote_amount, None, stop_loss_params)

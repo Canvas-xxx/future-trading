@@ -100,11 +100,11 @@ def run_ordinary_task():
         print("Trend", Trend)
         if Signal  == "Buy_Signal":
             print("BUY-Trade")
-            create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage)
+            create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage, tp_percentage)
           
         elif Signal  == "Sell_Signal":
             print("SELL-Trade")
-            create_stop_loss_order(exchange, market.get('symbol'), 'sell', position_size, stop_loss_percentage)
+            create_stop_loss_order(exchange, market.get('symbol'), 'sell', position_size, stop_loss_percentage, tp_percentage)
     
         else:
             print("Non-Trade")
