@@ -11,5 +11,3 @@ build:
     RISK_OF_RUIN: 2
     SL_PERCENTAGE: 2
     TP_PERCENTAGE: 5
-run:
-  scheduler: python app.py
