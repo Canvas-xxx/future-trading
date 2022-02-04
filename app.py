@@ -4,7 +4,7 @@ import time
 import moment
 import pprint36 as pprint
 import settings as ENV
-from services.signal import detect_signal_sign, find_signal_sign
+from services.signal import detect_signal_sign, find_signal_macd_rsi_sign
 from services.wallet_information import get_position_size, get_usdt_balance, get_positions_list
 from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order
 
@@ -92,12 +92,12 @@ def run_ordinary_task():
 
     print("\n""####### Trade Status #####")
     for market in none_position_market:
-        Trend, Signal = find_signal_sign(exchange, market.get('symbol'), timeframe, limit)
+        # Signal = find_signal_ema_sign(exchange, market.get('symbol'), timeframe, limit)
+        Signal = find_signal_macd_rsi_sign(exchange, market.get('symbol'), timeframe, limit)
 
         set_pair_leverage(exchange, market.get('symbol'), leverage)
         print("$$$$$$$$$$$$$$$$$$$$$$$$$$")
         print("Symbol", market.get('symbol'))
-        print("Trend", Trend)
         if Signal  == "Buy_Signal":
             print("BUY-Trade")
             create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage, tp_percentage)
