@@ -3,7 +3,7 @@ import time
 import moment
 import pprint36 as pprint
 import settings as ENV
-# from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.blocking import BlockingScheduler
 from signal import detect_signal_sign, find_signal_sign
 from wallet_information import get_position_size, get_usdt_balance, get_positions_list
 from markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order
@@ -129,18 +129,17 @@ def wake_up_job():
 
 if __name__ == "__main__":
     print("\n""####### Run Scheduler #####")
-    # scheduler = BlockingScheduler()
+    scheduler = BlockingScheduler()
     duration = int(TF_DURATION)
     wake_up_duration = 0
     if duration > 1:
         wake_up_duration = duration - 1
     else:
         wake_up_duration = duration
-    # scheduler.add_job(wake_up_job, 'cron', hour='*/' + str(wake_up_duration), minute='59', second='40', timezone="Africa/Abidjan")
-    # scheduler.add_job(schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(wake_up_job, 'cron', hour='*/' + str(wake_up_duration), minute='59', second='40', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 
     try:
-        print("start")
-        # scheduler.start()
+        scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         pass
