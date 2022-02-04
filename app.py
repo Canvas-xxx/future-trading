@@ -19,11 +19,11 @@ exchange = ccxt.binanceusdm({
     }
 })
 
-timeframe = "4h" # Ex. 5m 15m 1h 4h 1d
+timeframe = "1h" # Ex. 5m 15m 1h 4h 1d
 limit = 100 # Candle limit
 leverage = 3 # Multiple
 risk_of_ruin = 2 # Percentage of position
-stop_loss_percentage = 2
+stop_loss_percentage = 1.5
 
 def run_ordinary_task():
     print("\n""######################")
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     now_mm = int(now.split('-')[1])
     
     times = 0
-    circle = 6
+    circle = 24
     not_yet = True
     
     while not_yet:
