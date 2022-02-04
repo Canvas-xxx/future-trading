@@ -58,41 +58,38 @@ def find_signal_sign(exchange, pair, timeframe, limit):
     count = len(df_ohlcv)
     
     EMA_fast_A = df_ohlcv['EMA_12'][count-2]
-    EMA_fast_B = df_ohlcv['EMA_12'][count-3]
-    
     EMA_slow_A = df_ohlcv['EMA_26'][count-2]
-    EMA_slow_B = df_ohlcv['EMA_26'][count-3]
-
     PRICE_high_A = df_ohlcv['high'][count-2]
-    PRICE_high_B = df_ohlcv['high'][count-3]
-
     PRICE_low_A = df_ohlcv['low'][count-2]
-    PRICE_low_B = df_ohlcv['low'][count-3]
-
     MACD_A = df_ohlcv['MACD_12_26_9'][count-2]
+
+    EMA_fast_B = df_ohlcv['EMA_12'][count-3] 
+    EMA_slow_B = df_ohlcv['EMA_26'][count-3]
+    PRICE_high_B = df_ohlcv['high'][count-3]
+    PRICE_low_B = df_ohlcv['low'][count-3]
     MACD_B = df_ohlcv['MACD_12_26_9'][count-3]
     
     # Signal and Trend
     Signal = "Non-Signal"
     Trend = "Non-Trend"
-    
-    if EMA_fast_A > EMA_slow_A :
-        if (MACD_B/MACD_A) >= 4 and PRICE_high_A < EMA_fast_A and PRICE_high_A < EMA_slow_A:
+
+    if EMA_fast_A > EMA_slow_A:
+        if PRICE_high_B > EMA_fast_B and PRICE_low_B < EMA_slow_B and (MACD_B / MACD_A) >= 1.25:
             Trend = "Down_trend"
-            if PRICE_high_B < EMA_fast_B and PRICE_high_B > EMA_slow_B:
+            if PRICE_high_A < EMA_slow_A and (PRICE_high_B / PRICE_low_B) < 1.05:
                 Signal = "Sell_Signal"
         else:
             Trend = "Up_trend"
-            # if EMA_fast_A > EMA_slow_A and EMA_fast_B < EMA_slow_B:
-            #     Signal = "Buy_Signal"
-    elif EMA_fast_A < EMA_slow_A :
-        if (MACD_B/MACD_A) >= 4 and PRICE_low_A > EMA_fast_A and PRICE_low_A > EMA_slow_A:
+            if EMA_fast_B < EMA_slow_B and (PRICE_high_B / PRICE_low_B) < 1.05:
+                Signal = "Buy_Signal"
+    elif EMA_fast_A < EMA_slow_A:
+        if PRICE_high_B > EMA_slow_B and PRICE_low_B < EMA_fast_B and (MACD_B / MACD_A) >= 1.25:
             Trend = "Up_trend"
-            if PRICE_low_B > EMA_fast_B and PRICE_low_B < EMA_slow_B:
+            if PRICE_low_A > EMA_slow_A and (PRICE_high_B / PRICE_low_B) < 1.05:
                 Signal = "Buy_Signal"
         else:
             Trend = "Down_trend"
-            # if EMA_fast_A < EMA_slow_A and EMA_fast_B > EMA_slow_B:
-            #     Signal = "Sell_Signal"
+            if EMA_fast_B > EMA_slow_B and (PRICE_high_B / PRICE_low_B) < 1.05:
+                Signal = "Sell_Signal"
  
     return Trend, Signal
