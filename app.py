@@ -95,7 +95,7 @@ if __name__ == "__main__":
         t_hh = int(t.split('-')[0])
         t_mm = int(t.split('-')[1])
         
-        if now_hh == t_hh and now_mm < 5:
+        if now_hh == t_hh and now_mm < 10:
             run_ordinary_task()
             not_yet = False
         else:
