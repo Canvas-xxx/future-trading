@@ -4,4 +4,4 @@ pandas_ta==0.3.14b0
 pprint36
 moment
 python-dotenv
-apscheduler==3.8.1
+APScheduler==3.0.0
