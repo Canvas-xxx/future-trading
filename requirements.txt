@@ -1,4 +1,4 @@
-ccxt
+ccxt==1.63.71
 pandas==1.2.1
 pandas_ta==0.3.14b0
 pprint36
