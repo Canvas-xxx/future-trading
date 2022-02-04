@@ -12,4 +12,4 @@ build:
     SL_PERCENTAGE: 2
     TP_PERCENTAGE: 5
 run:
-  scheduler: bundle exec puma -C config/puma.rb
+  scheduler: python app.py
