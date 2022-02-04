@@ -13,7 +13,3 @@ build:
     TP_PERCENTAGE: 5
 run:
   scheduler: bundle exec puma -C config/puma.rb
-  worker:
-    command:
-      - python app.py
-    image: scheduler
