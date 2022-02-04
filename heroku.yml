@@ -1,0 +1,19 @@
+build:
+  docker:
+    scheduler: Dockerfile
+  config:
+    API_KEY: x7WKgh5lDpM9BRW6JDwm0Nm4Ff4KQ3kklLAK1QFteTsONveFaQ7YBUqxutXVJR5I
+    SECRET_KEY: IA9LzxjN5z4rb6EL4ehu0clblQp1qjiYCMyWImXMXSG5Hfufjj5MbhFuLVo9at9e
+    TF_DURATION: 1
+    TF_UNIT: h
+    CANDLE_LIMIT: 100
+    LEVERAGE: 3
+    RISK_OF_RUIN: 2
+    SL_PERCENTAGE: 2
+    TP_PERCENTAGE: 5
+run:
+  scheduler: bundle exec puma -C config/puma.rb
+  worker:
+    command:
+      - python app.py
+    image: scheduler
