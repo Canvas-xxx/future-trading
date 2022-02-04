@@ -1,6 +1,7 @@
 ccxt
 pandas
-pandas_ta==0.3.2b0
+pandas_ta==0.3.14b0
 pprint36
 moment
 python-dotenv
+apscheduler

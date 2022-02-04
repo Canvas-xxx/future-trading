@@ -3,12 +3,20 @@ import time
 import moment
 import pprint36 as pprint
 import settings as ENV
+from apscheduler.schedulers.blocking import BlockingScheduler
 from signal import detect_signal_sign, find_signal_sign
 from wallet_information import get_position_size, get_usdt_balance, get_positions_list
 from markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
+TF_DURATION = ENV.TF_DURATION
+TF_UNIT = ENV.TF_UNIT
+CANDLE_LIMIT = ENV.CANDLE_LIMIT
+RISK_OF_RUIN = ENV.RISK_OF_RUIN
+LEVERAGE = ENV.LEVERAGE
+SL_PERCENTAGE = ENV.SL_PERCENTAGE
+TP_PERCENTAGE = ENV.TP_PERCENTAGE
 
 exchange = ccxt.binanceusdm({
     'apiKey': API_KEY, 
@@ -19,13 +27,50 @@ exchange = ccxt.binanceusdm({
     }
 })
 
-timeframe = "1h" # Ex. 5m 15m 1h 4h 1d
-limit = 100 # Candle limit
-leverage = 3 # Multiple
-risk_of_ruin = 2 # Percentage of position
-stop_loss_percentage = 1.5
+def schedule_job():
+    print("############ Schedule(",moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),") ############")
+    utc = moment.utcnow().zero.date
+    now = moment.utcnow().format("HH-mm")
+    now_hh = int(now.split('-')[0])
+    now_mm = int(now.split('-')[1])
+    
+    times = 0
+    duration = int(TF_DURATION)
+    circle = round(24/duration)
+    not_yet = True
+    
+    while not_yet:
+        t = moment.date(utc).add(hour=(times*duration)).format("HH-mm")
+        t_hh = int(t.split('-')[0])
+        
+        if now_hh == t_hh and now_mm < 2:
+            run_ordinary_task()
+            not_yet = False
+        else:
+            times = times + 1
+            if times >= circle:
+                not_yet = False
+
+    positions = get_positions_list(exchange)
+    cancel_unused_order(exchange, positions)
+    print("\n""############ End Schedule ############")
 
 def run_ordinary_task():
+    timeframe = TF_DURATION + TF_UNIT
+    limit = CANDLE_LIMIT
+    leverage = LEVERAGE
+    risk_of_ruin = RISK_OF_RUIN
+    stop_loss_percentage = SL_PERCENTAGE
+    tp_percentage = TP_PERCENTAGE
+    print("\n""######## Configuration ##########")
+    print("TIMEFRAME", timeframe)
+    print("CANDLE_LIMIT", limit)
+    print("LEVERAGE", leverage)
+    print("RISK_OF_RUIN", risk_of_ruin)
+    print("STOP LOSS PERCENTAGE", stop_loss_percentage)
+    print("TAKE PROFIT PERCENTAGE", tp_percentage)
+    print("######################")
+
     print("\n""######################")
     balance = get_usdt_balance(exchange) 
     print("Balance", balance)
@@ -79,30 +124,22 @@ def run_ordinary_task():
             print("HOLD-Position", position.get('symbol'))
     print("##########################")
 
-if __name__ == "__main__":
-    print("############ Schedule ############", moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"))
-    utc = moment.utcnow().zero.date
-    now = moment.utcnow().format("HH-mm")
-    now_hh = int(now.split('-')[0])
-    now_mm = int(now.split('-')[1])
-    
-    times = 0
-    circle = 24
-    not_yet = True
-    
-    while not_yet:
-        t = moment.date(utc).add(hour=(times*1)).format("HH-mm")
-        t_hh = int(t.split('-')[0])
-        t_mm = int(t.split('-')[1])
-        
-        if now_hh == t_hh and now_mm < 2:
-            run_ordinary_task()
-            not_yet = False
-        else:
-            times = times + 1
-            if times >= circle:
-                not_yet = False
+def wake_up_job():
+    print('Tick! The time is: %s', moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"))
 
-    positions = get_positions_list(exchange)
-    cancel_unused_order(exchange, positions)
-    print("\n""############ End Schedule ############")
+if __name__ == "__main__":
+    print("\n""####### Run Scheduler #####")
+    scheduler = BlockingScheduler()
+    duration = int(TF_DURATION)
+    wake_up_duration = 0
+    if duration > 1:
+        wake_up_duration = duration - 1
+    else:
+        wake_up_duration = duration
+    scheduler.add_job(wake_up_job, 'cron', hour='*/' + str(wake_up_duration), minute='59', second='40', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
+
+    try:
+        scheduler.start()
+    except (KeyboardInterrupt, SystemExit):
+        pass

@@ -83,8 +83,8 @@ def find_signal_sign(exchange, pair, timeframe, limit):
                 Signal = "Sell_Signal"
         else:
             Trend = "Up_trend"
-            if EMA_fast_A > EMA_slow_A and EMA_fast_B < EMA_slow_B:
-                Signal = "Buy_Signal"
+            # if EMA_fast_A > EMA_slow_A and EMA_fast_B < EMA_slow_B:
+            #     Signal = "Buy_Signal"
     elif EMA_fast_A < EMA_slow_A :
         if (MACD_B/MACD_A) >= 4 and PRICE_low_A > EMA_fast_A and PRICE_low_A > EMA_slow_A:
             Trend = "Up_trend"
@@ -92,7 +92,7 @@ def find_signal_sign(exchange, pair, timeframe, limit):
                 Signal = "Buy_Signal"
         else:
             Trend = "Down_trend"
-            if EMA_fast_A < EMA_slow_A and EMA_fast_B > EMA_slow_B:
-                Signal = "Sell_Signal"
+            # if EMA_fast_A < EMA_slow_A and EMA_fast_B > EMA_slow_B:
+            #     Signal = "Sell_Signal"
  
     return Trend, Signal
