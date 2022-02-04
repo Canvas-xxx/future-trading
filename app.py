@@ -91,7 +91,7 @@ if __name__ == "__main__":
     not_yet = True
     
     while not_yet:
-        t = moment.date(utc).add(hour=(times*4)).format("HH-mm")
+        t = moment.date(utc).add(hour=(times*1)).format("HH-mm")
         t_hh = int(t.split('-')[0])
         t_mm = int(t.split('-')[1])
         
