@@ -27,6 +27,10 @@ exchange = ccxt.binanceusdm({
     }
 })
 
+def cancle_close_positions():
+    positions = get_positions_list(exchange)
+    cancel_unused_order(exchange, positions)
+
 def schedule_job():
     print("############ Schedule(",moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),") ############")
     utc = moment.utcnow().zero.date
@@ -51,8 +55,6 @@ def schedule_job():
             if times >= circle:
                 not_yet = False
 
-    positions = get_positions_list(exchange)
-    cancel_unused_order(exchange, positions)
     print("\n""############ End Schedule ############")
 
 def run_ordinary_task():
@@ -86,6 +88,8 @@ def run_ordinary_task():
     positions_symbol = list(map(lambda position: position.get('symbol'), positions)) 
     pprint.pprint(positions_symbol)
     print("##########################")
+
+    cancle_close_positions()
 
     markets = get_market_list(exchange)
     none_position_market = list(filter(lambda market: market.get('symbol') not in positions_symbol, markets))
@@ -136,6 +140,8 @@ if __name__ == "__main__":
         wake_up_duration = duration - 1
     else:
         wake_up_duration = duration
+
+    scheduler.add_job(cancle_close_positions, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(wake_up_job, 'cron', hour='*/' + str(wake_up_duration), minute='59', second='45', timezone="Africa/Abidjan")
     scheduler.add_job(schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='5', timezone="Africa/Abidjan")
 
