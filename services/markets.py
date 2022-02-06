@@ -2,9 +2,24 @@ import pandas as pd
 import pandas_ta as ta
 import pprint36 as pprint
 
-def get_market_list(exchange):
+def get_market_list(exchange, type, quote_asset):
     markets = exchange.fetch_markets()
-    available_expiry_markets = list(filter(lambda market: market.get('expiry') == None and market.get('future') and market.get('info').get('quoteAsset') == "USDT", markets))
+    if type == 'future':
+        available_expiry_markets = list(
+            filter(
+                lambda market: market.get('expiry') == None and market.get('future') and market.get('info').get('quoteAsset') == quote_asset, markets
+            )
+        )
+    elif type == 'spot':
+        available_expiry_markets = list(
+            filter(
+                lambda market: market.get('expiry') == None and market.get('spot') and market.get('info').get('quoteAsset') == quote_asset, markets
+            )
+        )
+    else:
+        available_expiry_markets = list(filter(lambda market: market.get('expiry') == None, markets))
+
+    pprint.pprint(available_expiry_markets)
     df_markets = pd.DataFrame(available_expiry_markets, columns=["symbol"])
     raws_tickers = exchange.fetch_tickers() 
     tickers = []
@@ -84,10 +99,10 @@ def create_stop_loss_order(exchange, symbol, side, amount, stop_loss, tp):
 
     print("\n""#######---------------########")
     
-def cancel_unused_order(exchange, positions):
+def cancel_unused_order(exchange, positions, type, quote_asset):
     print("\n""####### Cancel Orders #####")
 
-    markets = get_market_list(exchange)
+    markets = get_market_list(exchange, 'future', 'USDT')
 
     positions_symbol = list(map(lambda position: position.get('symbol'), positions)) 
     markets_symbol = list(map(lambda market: market.get('symbol'), markets))
@@ -100,3 +115,7 @@ def cancel_unused_order(exchange, positions):
 
     print("##########################")
 
+def get_average_price_by_symbol(exchange, symbol):
+    ticker = exchange.fetch_ticker(symbol)
+    average_price = (ticker.get('ask') + ticker.get('bid')) / 2
+    return average_price
