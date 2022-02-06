@@ -96,12 +96,12 @@ def run_ordinary_task():
 
     print("\n""####### Trade Status #####")
     for market in none_position_market:
-        # Signal = find_signal_ema_sign(exchange, market.get('symbol'), timeframe, limit)
-        Signal = find_signal_macd_rsi_sign(exchange, market.get('symbol'), timeframe, limit)
-
         set_pair_leverage(exchange, market.get('symbol'), leverage)
+
         print("$$$$$$$$$$$$$$$$$$$$$$$$$$")
         print("Symbol", market.get('symbol'))
+        # Signal = find_signal_ema_sign(exchange, market.get('symbol'), timeframe, limit)
+        Signal = find_signal_macd_rsi_sign(exchange, market.get('symbol'), timeframe, limit)
         if Signal  == "Buy_Signal":
             print("BUY-Trade")
             create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage, tp_percentage)
