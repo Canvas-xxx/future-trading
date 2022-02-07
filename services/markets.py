@@ -19,7 +19,6 @@ def get_market_list(exchange, type, quote_asset):
     else:
         available_expiry_markets = list(filter(lambda market: market.get('expiry') == None, markets))
 
-    pprint.pprint(available_expiry_markets)
     df_markets = pd.DataFrame(available_expiry_markets, columns=["symbol"])
     raws_tickers = exchange.fetch_tickers() 
     tickers = []
