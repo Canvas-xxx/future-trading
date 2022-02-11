@@ -102,11 +102,11 @@ def find_signal_macd_rsi_sign(exchange, pair, timeframe, limit):
     count = len(df_ohlcv)
     macd_blue_a = df_ohlcv['MACD_12_26_9'][count-2]
     macd_orange_a = df_ohlcv['MACDs_12_26_9'][count-2]
-    rsi_a = df_ohlcv['RSI_14'][count-2]
+    rsi_a = round(df_ohlcv['RSI_14'][count-2], 1)
 
     macd_blue_b = df_ohlcv['MACD_12_26_9'][count-3]
     macd_orange_b = df_ohlcv['MACDs_12_26_9'][count-3]
-    rsi_b = df_ohlcv['RSI_14'][count-3]
+    rsi_b = round(df_ohlcv['RSI_14'][count-3], 1)
 
     Signal = "Non-Signal"
 
