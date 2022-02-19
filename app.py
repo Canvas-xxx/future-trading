@@ -171,23 +171,17 @@ def rebalacing_pair_of_symbol():
 
     print("##########################")
 
-def wake_up_job():
-    print('Tick! The time is: %s', moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"))
-
 if __name__ == "__main__":
     print("\n""####### Run Scheduler #####")
     scheduler = BlockingScheduler()
     duration = int(TF_DURATION)
-
-    # PING Server Schedule
-    scheduler.add_job(wake_up_job, 'cron', hour='*/1', minute='59', second='45', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
     scheduler.add_job(cancle_close_positions, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='5', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
-    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', day='*/1', hour='0', minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', hour='*/6', minute='0', second='0', timezone="Africa/Abidjan")
 
     try:
         scheduler.start()
