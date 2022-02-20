@@ -118,7 +118,7 @@ def find_signal_macd_rsi_sign(exchange, pair, timeframe, limit):
             if macd_blue_a > macd_blue_b and macd_orange_a < macd_orange_b:
                 print("MACD WILL CROSS UP TREND")
                 if rsi_a > rsi_b and rsi_b > rsi_c:
-                    if (rsi_a - rsi_b) > 1 and rsi_a > 42 and rsi_a < 50 and (rsi_b > 35 or rsi_c > 35) and (rsi_b < 40 or rsi_c < 40):
+                    if (rsi_a - rsi_b) > 1 and rsi_a > 42 and rsi_a < 50 and ((rsi_b > 35 and rsi_b < 40) or (rsi_c > 35 and rsi_c < 40)):
                          print("RSI UP")
                          Signal = "Buy_Signal"
         else:
@@ -129,7 +129,7 @@ def find_signal_macd_rsi_sign(exchange, pair, timeframe, limit):
             if macd_blue_a < macd_blue_b and macd_orange_a > macd_orange_b:
                 print("MACD WILL CROSS DOWN TREND")
                 if rsi_a < rsi_b and rsi_b < rsi_c:
-                    if (rsi_b - rsi_a) > 1 and rsi_a > 50 and rsi_a < 58 and (rsi_b > 60 or rsi_c > 60) and (rsi_b < 65 or rsi_c < 65):
+                    if (rsi_b - rsi_a) > 1 and rsi_a > 50 and rsi_a < 58 and ((rsi_b > 60 and rsi_b < 65) or (rsi_c > 60 and rsi_c < 65)):
                           print("RSI DOWN")
                           Signal = "Sell_Signal"
         else:
