@@ -142,6 +142,7 @@ def rebalacing_pair_of_symbol():
     print("REBALANCING_COIN", REBALANCING_COIN)
     print("REBALANCING_FAIT_COIN", REBALANCING_FAIT_COIN)
     print("REBALANCING_PERCENTAGE", REBALANCING_PERCENTAGE)
+
     coin = REBALANCING_COIN
     fiat = REBALANCING_FAIT_COIN
     pair_trade = coin + '/' + fiat
@@ -149,17 +150,26 @@ def rebalacing_pair_of_symbol():
     average = get_average_price_by_symbol(exchange_spot, pair_trade)
     coin_value = coin_unit * average
 
+    print("Coin Unit", coin_unit)
+    print("Fiat Unit", fiat_unit)
+    print("Coin Value", coin_value)
+
     rebalance_mark = fiat_unit
     rebalance_percentage = REBALANCING_PERCENTAGE
 
     side = None
     diff_value = 0
-    if coin_value > (rebalance_mark + (rebalance_mark * rebalance_percentage / 100)):
+    rebalance_mark_sell = rebalance_mark + (rebalance_mark * rebalance_percentage / 100)
+    rebalance_mark_buy = rebalance_mark - (rebalance_mark * rebalance_percentage / 100)
+    print("Rebalance Mark Sell", rebalance_mark_sell)
+    print("Rebalance Mark Buy", rebalance_mark_buy)
+
+    if coin_value > rebalance_mark_sell:
         side = 'sell'
         diff_value = coin_value - rebalance_mark
-        if coin_value < (rebalance_mark + (rebalance_mark * (rebalance_percentage * 2) / 100)):
+        if coin_value < (rebalance_mark - (rebalance_mark * (rebalance_percentage * 2) / 100)):
             diff_value = diff_value / 2
-    elif coin_value < (rebalance_mark - (rebalance_mark * rebalance_percentage / 100)):
+    elif coin_value < rebalance_mark_buy:
         side = 'buy'
         diff_value = rebalance_mark - coin_value
         if coin_value > (rebalance_mark + (rebalance_mark * (rebalance_percentage * 2) / 100)):
@@ -178,10 +188,10 @@ if __name__ == "__main__":
 
     # Futures Trading Schedule
     scheduler.add_job(cancle_close_positions, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='5', timezone="Africa/Abidjan")
+    scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='1', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
-    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', hour='*/6', minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', hour='*/1', minute='0', second='0', timezone="Africa/Abidjan")
 
     try:
         scheduler.start()
