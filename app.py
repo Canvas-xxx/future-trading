@@ -167,13 +167,11 @@ def rebalacing_pair_of_symbol():
     if coin_value > rebalance_mark_sell:
         side = 'sell'
         diff_value = coin_value - rebalance_mark
-        if coin_value < (rebalance_mark - (rebalance_mark * (rebalance_percentage * 2) / 100)):
-            diff_value = diff_value / 2
+        diff_value = diff_value / 2
     elif coin_value < rebalance_mark_buy:
         side = 'buy'
         diff_value = rebalance_mark - coin_value
-        if coin_value > (rebalance_mark + (rebalance_mark * (rebalance_percentage * 2) / 100)):
-            diff_value = diff_value / 2
+        diff_value = diff_value / 2
 
     if side != None and fiat_unit > 0:
         print(side, pair_trade, 'Amount', (diff_value / average))
