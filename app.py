@@ -6,7 +6,7 @@ import pprint36 as pprint
 import settings as ENV
 from services.signal import detect_signal_sign, find_signal_macd_rsi_sign
 from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
-from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol 
+from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol, adjust_trailing_stop_position 
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
@@ -39,6 +39,11 @@ exchange_spot = ccxt.binance({
 def cancle_close_positions():
     positions = get_positions_list(exchange)
     cancel_unused_order(exchange, positions, 'future', 'USDT')
+    trailing_stop_positions()
+
+def trailing_stop_positions():
+    positions = get_positions_list(exchange)
+    adjust_trailing_stop_position(exchange, positions, SL_PERCENTAGE)
 
 def future_schedule_job():
     print("############ Schedule(",moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),") ############")
