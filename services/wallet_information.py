@@ -7,9 +7,12 @@ def get_usdt_balance_in_future_wallet(exchange):
     return float(total_balance) 
 
 def get_positions_list(exchange):
-    positions = exchange.fetch_positions()
-    filtered_positions = filter(lambda x: x.get('side') != None, positions)
-    return list(filtered_positions)
+    try:
+        positions = exchange.fetch_positions()
+        filtered_positions = filter(lambda x: x.get('side') != None, positions)
+        return list(filtered_positions)
+    except:
+        return list([])
 
 def get_unit_of_symbol(exchange, coin, fiat):
     balance = exchange.fetch_balance()
