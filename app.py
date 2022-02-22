@@ -103,8 +103,6 @@ def run_ordinary_future_task():
     pprint.pprint(positions_symbol)
     print("##########################")
 
-    cancle_close_positions()
-
     markets = get_market_list(exchange, 'future', 'USDT')
     none_position_market = list(filter(lambda market: market.get('symbol') not in positions_symbol, markets))
 
