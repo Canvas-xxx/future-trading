@@ -103,7 +103,6 @@ def find_signal_macd_rsi_sign(exchange, pair, timeframe, limit):
 
     try:
         count = len(df_ohlcv)
-        macd_len = len(df_ohlcv['MACD_12_26_9'])
         macd_blue_a = df_ohlcv['MACD_12_26_9'][count-2]
         macd_orange_a = df_ohlcv['MACDs_12_26_9'][count-2]
         rsi_a = round(df_ohlcv['RSI_14'][count-2], 1)
