@@ -90,6 +90,8 @@ def find_signal_ema_sign(exchange, pair, timeframe, limit):
     return Signal
 
 def find_signal_macd_rsi_sign(exchange, pair, timeframe, limit):
+    Signal = "Non-Signal"
+
     df_ohlcv = exchange.fetch_ohlcv(pair ,timeframe=timeframe, limit=limit)
     df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
     df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
@@ -99,18 +101,21 @@ def find_signal_macd_rsi_sign(exchange, pair, timeframe, limit):
 
     df_ohlcv = pd.concat([df_ohlcv, macd, rsi], axis=1)
 
-    count = len(df_ohlcv)
-    macd_blue_a = df_ohlcv['MACD_12_26_9'][count-2]
-    macd_orange_a = df_ohlcv['MACDs_12_26_9'][count-2]
-    rsi_a = round(df_ohlcv['RSI_14'][count-2], 1)
+    try:
+        count = len(df_ohlcv)
+        macd_len = len(df_ohlcv['MACD_12_26_9'])
+        macd_blue_a = df_ohlcv['MACD_12_26_9'][count-2]
+        macd_orange_a = df_ohlcv['MACDs_12_26_9'][count-2]
+        rsi_a = round(df_ohlcv['RSI_14'][count-2], 1)
 
-    macd_blue_b = df_ohlcv['MACD_12_26_9'][count-3]
-    macd_orange_b = df_ohlcv['MACDs_12_26_9'][count-3]
-    rsi_b = round(df_ohlcv['RSI_14'][count-3], 1)
+        macd_blue_b = df_ohlcv['MACD_12_26_9'][count-3]
+        macd_orange_b = df_ohlcv['MACDs_12_26_9'][count-3]
+        rsi_b = round(df_ohlcv['RSI_14'][count-3], 1)
 
-    rsi_c = round(df_ohlcv['RSI_14'][count-4], 1)
+        rsi_c = round(df_ohlcv['RSI_14'][count-4], 1)
+    except:
+        return Signal
 
-    Signal = "Non-Signal"
 
     if macd_blue_a < 0 and macd_orange_a < 0:
         print("MACD LOWER MIDDLE")
@@ -119,8 +124,8 @@ def find_signal_macd_rsi_sign(exchange, pair, timeframe, limit):
                 print("MACD WILL CROSS UP TREND")
                 if rsi_a > rsi_b and rsi_b > rsi_c:
                     if (rsi_a - rsi_b) > 1 and rsi_a > 42 and rsi_a < 50 and ((rsi_b > 35 and rsi_b < 40) or (rsi_c > 35 and rsi_c < 40)):
-                         print("RSI UP")
-                         Signal = "Buy_Signal"
+                        print("RSI UP")
+                        Signal = "Buy_Signal"
         else:
             print("MACD ALREADY CROSS UP TREND")
     elif macd_blue_a > 0 and macd_orange_a > 0:
@@ -130,8 +135,8 @@ def find_signal_macd_rsi_sign(exchange, pair, timeframe, limit):
                 print("MACD WILL CROSS DOWN TREND")
                 if rsi_a < rsi_b and rsi_b < rsi_c:
                     if (rsi_b - rsi_a) > 1 and rsi_a > 50 and rsi_a < 58 and ((rsi_b > 60 and rsi_b < 65) or (rsi_c > 60 and rsi_c < 65)):
-                          print("RSI DOWN")
-                          Signal = "Sell_Signal"
+                        print("RSI DOWN")
+                        Signal = "Sell_Signal"
         else:
             print("MACD ALREADY CROSS DOWN TREND")
     return Signal
