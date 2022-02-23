@@ -178,7 +178,10 @@ def rebalacing_pair_of_symbol():
 
     if side != None and fiat_unit > 0:
         print(side, pair_trade, 'Amount', (diff_value / average))
-        exchange_spot.create_order(pair_trade, 'market', side, (diff_value/average))
+        try:
+            exchange_spot.create_order(pair_trade, 'market', side, (diff_value/average))
+        except:
+            print("Coin Less Than Min Limitation")
 
     print("##########################")
 
