@@ -140,13 +140,12 @@ def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
                     for stop_loss_order in stop_loss_orders:
                         try:
                             exchange.cancel_order(stop_loss_order.get('id'), stop_loss_order.get('symbol'))
+                            stop_price = stop_loss_order.get('stopPrice')
                         except:
+                            stop_price = None
                             print(symbol, "Missing Order Number")
 
-                        stop_price = stop_loss_order.get('stopPrice')
-                        if max_value_stop_loss == None:
-                            max_value_stop_loss = stop_price 
-                        else:
+                        if stop_price is not None:
                             if side == 'buy':
                                 if max_value_stop_loss < stop_price:
                                     max_value_stop_loss = stop_price
@@ -155,8 +154,11 @@ def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
                                     max_value_stop_loss = stop_price
 
                     stop_loss_params = {'stopPrice': max_value_stop_loss} 
-                    stop_order = exchange.create_order(symbol, 'stop_market', sl_side, position_amount, None, stop_loss_params)
-                    print(symbol, "Update Stop Price To", stop_order['stopPrice'], "Current Profit Percentage", real_percentage, "%")
+                    try:
+                        stop_order = exchange.create_order(symbol, 'stop_market', sl_side, position_amount, None, stop_loss_params)
+                        print(symbol, "Update Stop Price To", stop_order['stopPrice'], "Current Profit Percentage", real_percentage, "%")
+                    except:
+                        print(symbol, "Cant Create Stop Loss order")
             else:
                 print(symbol, "No Positions")
         else:
