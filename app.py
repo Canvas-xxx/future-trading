@@ -192,10 +192,10 @@ if __name__ == "__main__":
 
     # Futures Trading Schedule
     scheduler.add_job(cancle_close_positions, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='1', timezone="Africa/Abidjan")
+    scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
-    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', hour='*/1', minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
 
     try:
         scheduler.start()
