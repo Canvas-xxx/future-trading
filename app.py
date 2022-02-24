@@ -39,7 +39,6 @@ exchange_spot = ccxt.binance({
 def cancle_close_positions():
     positions = get_positions_list(exchange)
     cancel_unused_order(exchange, positions, 'future', 'USDT')
-    trailing_stop_positions()
 
 def trailing_stop_positions():
     positions = get_positions_list(exchange)
@@ -191,6 +190,7 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Futures Trading Schedule
+    scheduler.add_job(trailing_stop_positions, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(cancle_close_positions, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 
