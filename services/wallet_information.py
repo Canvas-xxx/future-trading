@@ -1,5 +1,5 @@
 def get_position_size(balance, risk_of_ruin, stop_loss, leverage):
-    return round(balance * risk_of_ruin / stop_loss / leverage)
+    return balance * risk_of_ruin / stop_loss / leverage
 
 def get_usdt_balance_in_future_wallet(exchange):
     balance = exchange.fetch_balance()

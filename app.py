@@ -116,11 +116,11 @@ def run_ordinary_future_task():
         Signal = find_signal_macd_rsi_sign(exchange, market.get('symbol'), timeframe, limit)
         if Signal  == "Buy_Signal":
             print("BUY-Trade")
-            create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage, tp_percentage)
+            create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
           
         elif Signal  == "Sell_Signal":
             print("SELL-Trade")
-            create_stop_loss_order(exchange, market.get('symbol'), 'sell', position_size, stop_loss_percentage, tp_percentage)
+            create_stop_loss_order(exchange, market.get('symbol'), 'sell', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
     
         else:
             print("Non-Trade")

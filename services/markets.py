@@ -31,23 +31,29 @@ def get_market_list(exchange, type, quote_asset):
         
     sorted_markets = df_markets.sort_values(by="volume", ascending=False)
     
-    return sorted_markets.to_dict('records')[0:100]
+    return sorted_markets.to_dict('records')[0:80]
 
 def set_pair_leverage(exchange, pair, leverage):
     exchange.set_leverage(leverage, pair)
 
-def get_amount_from_quote(exchange, symbol, quote_amount):
+def get_amount_from_quote(exchange, symbol, position_size):
     ticker = exchange.fetch_ticker(symbol)
     price = ticker.get('close')
-    return quote_amount / price
+    return position_size / price
 
-def create_stop_loss_order(exchange, symbol, side, amount, stop_loss, tp):
-    quote_amount = get_amount_from_quote(exchange, symbol, amount)
+def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp, leverage):
     print("\n""####### Create Order ########")
     print("Symbol", symbol)
     print("Side", side)
-    print("Amount", amount, "USDT")
+    print("Position Size", position_size, "USDT")
+    print("Leverage", leverage)
+
+    leverage_position_size = position_size * leverage
+    print("Leverage Position Size", leverage_position_size)
+
+    quote_amount = get_amount_from_quote(exchange, symbol, leverage_position_size)
     print("Quota Amount", quote_amount, "Coin")
+
     try:
         order = exchange.create_order(symbol, 'market', side, quote_amount)
         order_price = order['price']
