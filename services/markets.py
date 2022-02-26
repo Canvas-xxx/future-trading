@@ -125,7 +125,7 @@ def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
         symbol = position.get('symbol')
         real_percentage = position.get('percentage') / int(position.get('info').get('leverage'))
         real_percentage_diff = real_percentage - stop_loss_percentage
-        if real_percentage_diff > 0:
+        if real_percentage_diff > stop_loss_percentage:
             position_amount = position.get('info').get('positionAmt')
             orders = exchange.fetch_orders(symbol)
             if len(orders) > 0:
@@ -135,13 +135,13 @@ def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
                     if position.get('side') == 'long' or position.get('side') == 'buy':
                         side = 'buy'
                         sl_side = 'sell'
-                        stop_loss_percentage = 1 + (real_percentage_diff / 100)
+                        sl_percentage = 1 + ((real_percentage_diff - stop_loss_percentage) / 100)
                     else:
                         side = 'sell'
                         sl_side = 'buy'
-                        stop_loss_percentage = 1 - (real_percentage_diff / 100)
+                        sl_percentage = 1 - ((real_percentage_diff - stop_loss_percentage) / 100)
 
-                    max_value_stop_loss = entry_price * stop_loss_percentage
+                    max_value_stop_loss = entry_price * sl_percentage
 
                     for stop_loss_order in stop_loss_orders:
                         try:
