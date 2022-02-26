@@ -109,7 +109,6 @@ def run_ordinary_future_task():
     for market in none_position_market:
         set_pair_leverage(exchange, market.get('symbol'), leverage)
 
-        print("$$$$$$$$$$$$$$$$$$$$$$$$$$")
         print("Symbol", market.get('symbol'))
         Signal = find_signal_macd_rsi_sign(exchange, market.get('symbol'), timeframe, limit)
         if Signal == "Non-Signal":
@@ -125,7 +124,6 @@ def run_ordinary_future_task():
     
         else:
             print("Non-Trade")
-        print("$$$$$$$$$$$$$$$$$$$$$$$$$$")
     print("##########################")
 
     print("\n""####### Positions Stop Loss #####")
