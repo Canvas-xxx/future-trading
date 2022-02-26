@@ -107,6 +107,7 @@ def run_ordinary_future_task():
 
     print("\n""####### Trade Status #####")
     for market in none_position_market:
+        print("---------------------------------")
         set_pair_leverage(exchange, market.get('symbol'), leverage)
 
         print("Symbol", market.get('symbol'))
@@ -124,6 +125,8 @@ def run_ordinary_future_task():
     
         else:
             print("Non-Trade")
+        print("---------------------------------")
+
     print("##########################")
 
     print("\n""####### Positions Stop Loss #####")
