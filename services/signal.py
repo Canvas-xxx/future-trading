@@ -52,40 +52,31 @@ def find_signal_ema_sign(exchange, pair, timeframe, limit):
     
     # รวมข้อมูล
     df_ohlcv = pd.concat([df_ohlcv, EMA_12, EMA_26, macd], axis=1)
-    # print("\n""Concat Data Frame" "\n",df_ohlcv)
     
     #EMA Cross
     count = len(df_ohlcv)
     
     EMA_fast_A = df_ohlcv['EMA_12'][count-2]
     EMA_slow_A = df_ohlcv['EMA_26'][count-2]
-    PRICE_high_A = df_ohlcv['high'][count-2]
-    PRICE_low_A = df_ohlcv['low'][count-2]
-    MACD_A = df_ohlcv['MACD_12_26_9'][count-2]
 
     EMA_fast_B = df_ohlcv['EMA_12'][count-3] 
     EMA_slow_B = df_ohlcv['EMA_26'][count-3]
-    PRICE_high_B = df_ohlcv['high'][count-3]
-    PRICE_low_B = df_ohlcv['low'][count-3]
-    MACD_B = df_ohlcv['MACD_12_26_9'][count-3]
+
+    RSI_B = round(df_ohlcv['RSI_14'][count-3], 1)
     
     # Signal and Trend
     Signal = "Non-Signal"
 
-    if EMA_fast_A > EMA_slow_A:
-        if PRICE_high_B > EMA_fast_B and PRICE_low_B < EMA_slow_B and (MACD_B / MACD_A) >= 1.25:
-            if PRICE_high_A < EMA_slow_A and (PRICE_high_B / PRICE_low_B) < 1.05:
-                Signal = "Sell_Signal"
-        else:
-            if EMA_fast_B < EMA_slow_B and (PRICE_high_B / PRICE_low_B) < 1.05:
-                Signal = "Buy_Signal"
-    elif EMA_fast_A < EMA_slow_A:
-        if PRICE_high_B > EMA_slow_B and PRICE_low_B < EMA_fast_B and (MACD_B / MACD_A) >= 1.25:
-            if PRICE_low_A > EMA_slow_A and (PRICE_high_B / PRICE_low_B) < 1.05:
-                Signal = "Buy_Signal"
-        else:
-            if EMA_fast_B > EMA_slow_B and (PRICE_high_B / PRICE_low_B) < 1.05:
-                Signal = "Sell_Signal"
+    if EMA_fast_A < EMA_slow_A and EMA_fast_B > EMA_slow_B:
+        print("EMA CROSS UP")
+        if RSI_B > 35 and RSI_B < 65:
+            print("RSI RANGE NORMAL")
+            Signal = "Buy_Signal"
+    elif EMA_fast_A > EMA_slow_A and EMA_fast_B < EMA_slow_B:
+        print("EMA CROSS DOWN")
+        if RSI_B > 35 and RSI_B < 65:
+            print("RSI RANGE NORMAL")
+            Signal = "Sell_Signal"
  
     return Signal
 
