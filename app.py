@@ -195,7 +195,7 @@ if __name__ == "__main__":
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
-    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
 
     try:
         scheduler.start()
