@@ -1,6 +1,7 @@
 import pandas as pd
 import pandas_ta as ta
 import pprint36 as pprint
+import math
 
 def get_market_list(exchange, type, quote_asset):
     markets = exchange.fetch_markets()
@@ -128,6 +129,9 @@ def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
         if real_percentage_diff > stop_loss_percentage:
             position_amount = position.get('info').get('positionAmt')
             orders = exchange.fetch_orders(symbol)
+            multiple_profit = math.floor(real_percentage_diff / stop_loss_percentage)
+            print("Multiple Profit Percentage", multiple_profit)
+
             if len(orders) > 0:
                 stop_loss_orders = list(filter(lambda order: order.get('type') == 'stop_market', orders)) 
                 if len(stop_loss_orders) > 0:
@@ -135,12 +139,15 @@ def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
                     if position.get('side') == 'long' or position.get('side') == 'buy':
                         side = 'buy'
                         sl_side = 'sell'
-                        sl_percentage = 1 + ((real_percentage_diff - stop_loss_percentage) / 100)
+                        if multiple_profit >= 2:
+                            sl_percentage = 1 + (((stop_loss_percentage / 2) * multiple_profit) / 100)
                     else:
                         side = 'sell'
                         sl_side = 'buy'
-                        sl_percentage = 1 - ((real_percentage_diff - stop_loss_percentage) / 100)
+                        if multiple_profit >= 2:
+                            sl_percentage = 1 - (((stop_loss_percentage / 2) * multiple_profit) / 100)
 
+                    sl_percentage = 1
                     max_value_stop_loss = entry_price * sl_percentage
 
                     for stop_loss_order in stop_loss_orders:
