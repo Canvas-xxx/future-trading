@@ -9,27 +9,70 @@ def detect_signal_sign(exchange, pair, timeframe, limit):
         df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
         df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
 
-        EMA_12 = df_ohlcv.ta.ema(close=df_ohlcv.ta.ohlc4(), length=12)
-        EMA_26 = df_ohlcv.ta.ema(close=df_ohlcv.ta.ohlc4(), length=26)
+        macd = df_ohlcv.ta.macd()
 
-        df_ohlcv = pd.concat([df_ohlcv, EMA_12, EMA_26], axis=1)
+        df_ohlcv = pd.concat([df_ohlcv, macd], axis=1)
 
         count = len(df_ohlcv)
 
-        EMA_fast_A = df_ohlcv['EMA_12'][count-2]
-        EMA_fast_B = df_ohlcv['EMA_12'][count-3]
-    
-        EMA_slow_A = df_ohlcv['EMA_26'][count-2]
-        EMA_slow_B = df_ohlcv['EMA_26'][count-3]
+        macd_a = df_ohlcv['MACD_12_26_9'][count-2]
+        macd_b = df_ohlcv['MACD_12_26_9'][count-3]
     except:
         return Signal
 
-    if EMA_fast_A < EMA_slow_A and EMA_fast_B > EMA_slow_B:
-        Signal = "Sell_POSITION"
-    elif EMA_fast_A > EMA_slow_A and EMA_fast_B < EMA_slow_B:
+    if macd_a > 0 and macd_b < 0:
         Signal = "Buy_POSITION"
+    elif macd_a < 0 and macd_b > 0:
+        Signal = "Sell_POSITION"
     else:
         Signal = "HOLD_POSITION"
+
+    return Signal
+
+def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
+    Signal = "Non-Signal"
+    try:
+        df_ohlcv = exchange.fetch_ohlcv(pair ,timeframe=timeframe, limit=limit)
+        df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
+        df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
+
+        macd = df_ohlcv.ta.macd()
+        rsi = df_ohlcv.ta.rsi()
+
+        df_ohlcv = pd.concat([df_ohlcv, macd, rsi], axis=1)
+
+        count = len(df_ohlcv)
+
+        macd_a = df_ohlcv['MACD_12_26_9'][count-2]
+        macd_b = df_ohlcv['MACD_12_26_9'][count-3]
+
+        macdh_a = df_ohlcv['MACDh_12_26_9'][count-2]
+        macdh_b = df_ohlcv['MACDh_12_26_9'][count-3]
+        macdh_c = df_ohlcv['MACDh_12_26_9'][count-4]
+        macdh_d = df_ohlcv['MACDh_12_26_9'][count-5]
+        macdh_e = df_ohlcv['MACDh_12_26_9'][count-6]
+        macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
+
+        rsi_a = df_ohlcv['RSI_14'][count-2]
+    except:
+        return Signal
+
+    if macd_a > 0 and macd_b < 0:
+        print("MACD WILL UP TREND")
+        if (macdh_a > 0 and macdh_b < 0) or (macdh_b > 0 and macdh_c < 0) or (macdh_c > 0 and macdh_d < 0) or (macdh_d > 0 and macdh_e < 0) or (macdh_e > 0 and macdh_f < 0):
+            print("MACD HAS NEARLY CROSS UP")
+            if rsi_a > 30 and rsi_a < 70:
+                print("RSI IS IN NORMAL RANGE")
+                Signal = "Buy_Signal"
+    elif macd_a < 0 and macd_b > 0:
+        print("MACD WILL DOWN TREND")
+        if (macdh_a < 0 and macdh_b > 0) or (macdh_b < 0 and macdh_c > 0) or (macdh_c < 0 and macdh_d > 0) or (macdh_d < 0 and macdh_e > 0) or (macdh_e < 0 and macdh_f > 0):
+            print("MACD HAS NEARLY CROSS DOWN")
+            if rsi_a > 30 and rsi_a < 70:
+                print("RSI IS IN NORMAL RANGE")
+                Signal = "Sell_Signal"
+    else:
+        print("MACD ALREADY HAS TREND")
 
     return Signal
 
@@ -80,55 +123,4 @@ def find_signal_ema_sign(exchange, pair, timeframe, limit):
                 print("ALREADY CROSS DOWN NEARLY")
                 Signal = "Sell_Signal"
  
-    return Signal
-
-def find_signal_macd_rsi_sign(exchange, pair, timeframe, limit):
-    Signal = "Non-Signal"
-
-    try:
-        df_ohlcv = exchange.fetch_ohlcv(pair ,timeframe=timeframe, limit=limit)
-        df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
-        df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
-
-        macd = df_ohlcv.ta.macd(close=df_ohlcv.ta.ohlc4())
-        rsi = df_ohlcv.ta.rsi(close=df_ohlcv.ta.ohlc4())
-
-        df_ohlcv = pd.concat([df_ohlcv, macd, rsi], axis=1)
-
-        count = len(df_ohlcv)
-        macd_blue_a = df_ohlcv['MACD_12_26_9'][count-2]
-        macd_orange_a = df_ohlcv['MACDs_12_26_9'][count-2]
-        rsi_a = round(df_ohlcv['RSI_14'][count-2], 1)
-
-        macd_blue_b = df_ohlcv['MACD_12_26_9'][count-3]
-        macd_orange_b = df_ohlcv['MACDs_12_26_9'][count-3]
-        rsi_b = round(df_ohlcv['RSI_14'][count-3], 1)
-
-        rsi_c = round(df_ohlcv['RSI_14'][count-4], 1)
-    except:
-        return Signal
-
-
-    if macd_blue_a < 0 and macd_orange_a < 0:
-        print("MACD LOWER MIDDLE")
-        if macd_blue_a < macd_orange_a:
-            if macd_blue_a > macd_blue_b and macd_orange_a < macd_orange_b:
-                print("MACD WILL CROSS UP TREND")
-                if rsi_a > rsi_b and rsi_b > rsi_c:
-                    if (rsi_a > 40 and rsi_a < 48) and (rsi_b > 30 and rsi_b < 40):
-                        print("RSI UP")
-                        Signal = "Buy_Signal"
-        else:
-            print("MACD ALREADY CROSS UP TREND")
-    elif macd_blue_a > 0 and macd_orange_a > 0:
-        print("MACD HIGHER MIDDLE")
-        if macd_blue_a > macd_orange_a:
-            if macd_blue_a < macd_blue_b and macd_orange_a > macd_orange_b:
-                print("MACD WILL CROSS DOWN TREND")
-                if rsi_a < rsi_b and rsi_b < rsi_c:
-                    if (rsi_a > 52 and rsi_a < 60) and (rsi_b > 60 and rsi_b < 70):
-                        print("RSI DOWN")
-                        Signal = "Sell_Signal"
-        else:
-            print("MACD ALREADY CROSS DOWN TREND")
     return Signal

@@ -4,7 +4,7 @@ import time
 import moment
 import pprint36 as pprint
 import settings as ENV
-from services.signal import detect_signal_sign, find_signal_macd_rsi_sign, find_signal_ema_sign
+from services.signal import detect_signal_sign, find_signal_ema_sign, find_signal_macd_4c_sign
 from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
 from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol, adjust_trailing_stop_position 
 
@@ -111,7 +111,7 @@ def run_ordinary_future_task():
         set_pair_leverage(exchange, market.get('symbol'), leverage)
 
         print("Symbol", market.get('symbol'))
-        Signal = find_signal_macd_rsi_sign(exchange, market.get('symbol'), timeframe, limit)
+        Signal = find_signal_macd_4c_sign(exchange, market.get('symbol'), timeframe, limit)
         if Signal == "Non-Signal":
             Signal = find_signal_ema_sign(exchange, market.get('symbol'), timeframe, limit)
 
