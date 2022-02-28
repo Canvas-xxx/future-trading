@@ -21,9 +21,9 @@ def detect_signal_sign(exchange, pair, timeframe, limit):
         return Signal
 
     if macd_a > 0 and macd_b < 0:
-        Signal = "Buy_POSITION"
+        Signal = "BUY_POSITION"
     elif macd_a < 0 and macd_b > 0:
-        Signal = "Sell_POSITION"
+        Signal = "SELL_POSITION"
     else:
         Signal = "HOLD_POSITION"
 

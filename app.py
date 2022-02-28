@@ -96,6 +96,22 @@ def run_ordinary_future_task():
     print("Position Size", position_size)
     print("##########################")
 
+    print("\n""####### Positions Stop Loss #####")
+    positions = get_positions_list(exchange)
+    for position in positions:
+        detect_signal = detect_signal_sign(exchange, position.get('symbol'), timeframe, limit)
+        if position.get('side') == "long" and detect_signal == "SELL_POSITION":
+            print("Stop-Loss-Position-Long", position.get('symbol'))
+            exchange.create_order(position.get('symbol'), 'market', 'sell', float(position.get('contracts')))
+        elif position.get('side') == "short" and detect_signal == "BUY_POSITION":
+            print("Stop-Loss-Position-Short", position.get('symbol'))
+            exchange.create_order(position.get('symbol'), 'market', 'buy', float(position.get('contracts')))
+        else:
+            print("HOLD-Position", position.get('symbol'))
+
+    cancel_unused_order(exchange, positions, 'future', 'USDT')
+    print("##########################")
+
     print("\n""####### Current Positions List #####")
     positions = get_positions_list(exchange)
     positions_symbol = list(map(lambda position: position.get('symbol'), positions)) 
@@ -127,19 +143,6 @@ def run_ordinary_future_task():
             print("Non-Trade")
         print("---------------------------------")
 
-    print("##########################")
-
-    print("\n""####### Positions Stop Loss #####")
-    for position in positions:
-        detect_signal = detect_signal_sign(exchange, position.get('symbol'), timeframe, limit)
-        if position.get('side') == "long" and detect_signal == "SELL_POSITION":
-            print("Stop-Loss-Position-Long", position.get('symbol'))
-            exchange.create_order(position.get('symbol'), 'market', 'sell', float(position.get('contracts')))
-        elif position.get('side') == "short" and detect_signal == "BUY_POSITION":
-            print("Stop-Loss-Position-Short", position.get('symbol'))
-            exchange.create_order(position.get('symbol'), 'market', 'buy', float(position.get('contracts')))
-        else:
-            print("HOLD-Position", position.get('symbol'))
     print("##########################")
 
 def rebalacing_pair_of_symbol():
