@@ -139,12 +139,12 @@ def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
                     if position.get('side') == 'long' or position.get('side') == 'buy':
                         side = 'buy'
                         sl_side = 'sell'
-                        if multiple_profit >= 2:
+                        if multiple_profit >= 1:
                             sl_percentage = 1 + (((stop_loss_percentage / 2) * multiple_profit) / 100)
                     else:
                         side = 'sell'
                         sl_side = 'buy'
-                        if multiple_profit >= 2:
+                        if multiple_profit >= 1:
                             sl_percentage = 1 - (((stop_loss_percentage / 2) * multiple_profit) / 100)
 
                     sl_percentage = 1
