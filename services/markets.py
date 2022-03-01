@@ -135,6 +135,7 @@ def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
             if len(orders) > 0:
                 stop_loss_orders = list(filter(lambda order: order.get('type') == 'stop_market', orders)) 
                 if len(stop_loss_orders) > 0:
+                    sl_percentage = 1
                     entry_price = position.get('entryPrice')
                     if position.get('side') == 'long' or position.get('side') == 'buy':
                         side = 'buy'
@@ -147,7 +148,6 @@ def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
                         if multiple_profit >= 1:
                             sl_percentage = 1 - (((stop_loss_percentage / 2) * multiple_profit) / 100)
 
-                    sl_percentage = 1
                     max_value_stop_loss = entry_price * sl_percentage
 
                     for stop_loss_order in stop_loss_orders:
