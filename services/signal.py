@@ -61,14 +61,14 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         print("MACD WILL UP TREND")
         if (macdh_a > 0 and macdh_b < 0) or (macdh_b > 0 and macdh_c < 0) or (macdh_c > 0 and macdh_d < 0) or (macdh_d > 0 and macdh_e < 0) or (macdh_e > 0 and macdh_f < 0):
             print("MACD HAS NEARLY CROSS UP")
-            if rsi_a > 30 and rsi_a < 70:
+            if rsi_a > 55 and rsi_a < 70:
                 print("RSI IS IN NORMAL RANGE")
                 Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
         print("MACD WILL DOWN TREND")
         if (macdh_a < 0 and macdh_b > 0) or (macdh_b < 0 and macdh_c > 0) or (macdh_c < 0 and macdh_d > 0) or (macdh_d < 0 and macdh_e > 0) or (macdh_e < 0 and macdh_f > 0):
             print("MACD HAS NEARLY CROSS DOWN")
-            if rsi_a > 30 and rsi_a < 70:
+            if rsi_a > 30 and rsi_a < 45:
                 print("RSI IS IN NORMAL RANGE")
                 Signal = "Sell_Signal"
     else:
@@ -86,8 +86,8 @@ def find_signal_ema_sign(exchange, pair, timeframe, limit):
     
         ema_12 = df_ohlcv.ta.ema(close=df_ohlcv.ta.ohlc4(), length=12)
         ema_26 = df_ohlcv.ta.ema(close=df_ohlcv.ta.ohlc4(), length=26)
-        macd = df_ohlcv.ta.macd(close=df_ohlcv.ta.ohlc4())
-        rsi = df_ohlcv.ta.rsi(close=df_ohlcv.ta.ohlc4())
+        macd = df_ohlcv.ta.macd()
+        rsi = df_ohlcv.ta.rsi()
     
         df_ohlcv = pd.concat([df_ohlcv, ema_12, ema_26, macd, rsi], axis=1)
     
