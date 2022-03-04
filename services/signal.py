@@ -54,6 +54,7 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
 
         rsi_a = df_ohlcv['RSI_14'][count-2]
+        rsi_b = df_ohlcv['RSI_14'][count-3]
     except:
         return Signal
 
@@ -61,16 +62,20 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         print("MACD WILL UP TREND")
         if (macdh_a > 0 and macdh_b < 0) or (macdh_b > 0 and macdh_c < 0) or (macdh_c > 0 and macdh_d < 0) or (macdh_d > 0 and macdh_e < 0) or (macdh_e > 0 and macdh_f < 0):
             print("MACD HAS NEARLY CROSS UP")
-            if rsi_a > 55 and rsi_a < 70:
+            if rsi_a > 55 and rsi_a < 68:
                 print("RSI IS IN NORMAL RANGE")
-                Signal = "Buy_Signal"
+                if (rsi_a - rsi_b) > 1:
+                    print("RSI IS UP")
+                    Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
         print("MACD WILL DOWN TREND")
         if (macdh_a < 0 and macdh_b > 0) or (macdh_b < 0 and macdh_c > 0) or (macdh_c < 0 and macdh_d > 0) or (macdh_d < 0 and macdh_e > 0) or (macdh_e < 0 and macdh_f > 0):
             print("MACD HAS NEARLY CROSS DOWN")
-            if rsi_a > 30 and rsi_a < 45:
+            if rsi_a > 33 and rsi_a < 45:
                 print("RSI IS IN NORMAL RANGE")
-                Signal = "Sell_Signal"
+                if (rsi_b - rsi_a) > 1:
+                    print("RSI IS DOWN")
+                    Signal = "Sell_Signal"
     else:
         print("MACD ALREADY HAS TREND")
 
