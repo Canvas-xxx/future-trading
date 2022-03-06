@@ -193,24 +193,27 @@ def rebalacing_pair_of_symbol():
         diff_value = rebalance_mark - coin_value
         diff_value = diff_value / 2
 
-    message = "\n""### Rebalancing Trigger ###" 
-    message += "\n""Symbol " + pair_trade
-    message += "\n""Coin Unit " + str(coin_unit)
-    message += "\n""Fiat Unit " + str(fiat_unit)
-    message += "\n""Coin Value " + str(coin_value)
-    message += "\n""Rebalance Mark Sell " + str(rebalance_mark_sell)
-    message += "\n""Rebalance Mark Buy " + str(rebalance_mark_buy) 
 
     if side != None and fiat_unit > 0:
         print(side, pair_trade, 'Amount', (diff_value / average))
+        message = "\n""### Rebalancing Trigger ###" 
+        message += "\n""Symbol " + pair_trade
+        message += "\n""Coin Unit " + str(coin_unit)
+        message += "\n""Fiat Unit " + str(fiat_unit)
+        message += "\n""Coin Value " + str(coin_value)
+        message += "\n""Rebalance Mark Sell " + str(rebalance_mark_sell)
+        message += "\n""Rebalance Mark Buy " + str(rebalance_mark_buy) 
+
         try:
             exchange_spot.create_order(pair_trade, 'market', side, (diff_value/average))
             message += "\n" + str(side).upper() + " at " + str(average) + " for " + str(diff_value/average)
         except:
             print("Coin Less Than Min Limitation")
+            message += "\n""Coin Less Than Min Limitation"
 
-    message += "\n""#######################" 
-    push_notify_message(LINE_NOTIFY_TOKEN, message)
+        message += "\n""#######################" 
+        push_notify_message(LINE_NOTIFY_TOKEN, message)
+
     print("##########################")
 
 if __name__ == "__main__":
