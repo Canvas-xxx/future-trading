@@ -195,17 +195,17 @@ def rebalacing_pair_of_symbol():
 
     message = "\n""### Rebalancing Trigger ###" 
     message += "\n""Symbol " + pair_trade
-    message += "\n""Coin Unit " + coin_unit
-    message += "\n""Fiat Unit " + fiat_unit 
-    message += "\n""Coin Value " + coin_value
-    message += "\n""Rebalance Mark Sell " + rebalance_mark_sell 
-    message += "\n""Rebalance Mark Buy " + rebalance_mark_buy 
+    message += "\n""Coin Unit " + str(coin_unit)
+    message += "\n""Fiat Unit " + str(fiat_unit)
+    message += "\n""Coin Value " + str(coin_value)
+    message += "\n""Rebalance Mark Sell " + str(rebalance_mark_sell)
+    message += "\n""Rebalance Mark Buy " + str(rebalance_mark_buy) 
 
     if side != None and fiat_unit > 0:
         print(side, pair_trade, 'Amount', (diff_value / average))
         try:
             exchange_spot.create_order(pair_trade, 'market', side, (diff_value/average))
-            message += "\n" + str(side).upper() + " at " + average + " for " + (diff_value/average)
+            message += "\n" + str(side).upper() + " at " + str(average) + " for " + str(diff_value/average)
         except:
             print("Coin Less Than Min Limitation")
 

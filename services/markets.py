@@ -51,7 +51,7 @@ def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp,
 
     notify_message = "\n""### Create Order ####"
     notify_message += "\n" + str(side).upper() + " " + symbol
-    notify_message += "\n""Position Size " + position_size + "USDT"
+    notify_message += "\n""Position Size " + str(position_size) + "USDT"
 
     leverage_position_size = position_size * leverage
     print("Leverage Position Size", leverage_position_size)
@@ -71,7 +71,7 @@ def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp,
             order_price = cumulative_quote / executed_quantity
 
         print("Entry Price", order['price'])
-        notify_message += "\n""Entry Price " + order['price']
+        notify_message += "\n""Entry Price " + str(order['price'])
     except:
         print("Balance insufficient")
         notify_message += "Balance insufficient"
@@ -93,7 +93,7 @@ def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp,
         stop_order = exchange.create_order(symbol, 'stop_market', tp_sl_side, quote_amount, None, stop_loss_params)
 
         print("Stop Loss Price", stop_order['stopPrice'])
-        notify_message += "\n""Stop Loss Price " + stop_order['stopPrice']
+        notify_message += "\n""Stop Loss Price " + str(stop_order['stopPrice'])
     except:
         print("Stop Loss Error")
         notify_message += "\n""Stop Loss Error"
@@ -103,7 +103,7 @@ def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp,
         tp_order = exchange.create_order(symbol, 'take_profit_market', tp_sl_side, quote_amount, None, tp_params)
 
         print("Take Profit Price", tp_order['stopPrice'])
-        notify_message += "\n""Take Profit Price " + tp_order['stopPrice']
+        notify_message += "\n""Take Profit Price " + str(tp_order['stopPrice'])
     except:
         print("Take Profit Error")
         notify_message += "\n""Take Profit Error"
