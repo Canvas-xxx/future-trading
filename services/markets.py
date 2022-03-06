@@ -49,7 +49,9 @@ def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp,
     print("Position Size", position_size, "USDT")
     print("Leverage", leverage)
 
-    notify_message = None
+    notify_message = "\n""### Create Order ####"
+    notify_message += "\n" + str(side).upper() + " " + symbol
+    notify_message += "\n""Position Size " + position_size + "USDT"
 
     leverage_position_size = position_size * leverage
     print("Leverage Position Size", leverage_position_size)
@@ -69,9 +71,11 @@ def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp,
             order_price = cumulative_quote / executed_quantity
 
         print("Entry Price", order['price'])
-        notify_message = 'Entry ' + str(side).upper() + ' ' + symbol + ' with ' + order['price']
+        notify_message += "\n""Entry Price " + order['price']
     except:
         print("Balance insufficient")
+        notify_message += "Balance insufficient"
+        return notify_message
     
     try:
         stop_loss_percentage = 0
@@ -88,23 +92,24 @@ def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp,
         stop_loss_params = {'stopPrice': order_price * stop_loss_percentage} 
         stop_order = exchange.create_order(symbol, 'stop_market', tp_sl_side, quote_amount, None, stop_loss_params)
 
-        notify_message += '\n'
-        notify_message += 'Stop loss price is ' + stop_order['stopPrice']
         print("Stop Loss Price", stop_order['stopPrice'])
+        notify_message += "\n""Stop Loss Price " + stop_order['stopPrice']
     except:
         print("Stop Loss Error")
+        notify_message += "\n""Stop Loss Error"
 
     try:
         tp_params = {'stopPrice': order_price * tp_percentage}
         tp_order = exchange.create_order(symbol, 'take_profit_market', tp_sl_side, quote_amount, None, tp_params)
 
-        notify_message += '\n'
-        notify_message += 'Take profit price is ' + tp_order['stopPrice']
         print("Take Profit Price", tp_order['stopPrice'])
+        notify_message += "\n""Take Profit Price " + tp_order['stopPrice']
     except:
         print("Take Profit Error")
+        notify_message += "\n""Take Profit Error"
 
     print("##########################")
+    notify_message += "\n""#####################"
     return notify_message
     
 def cancel_unused_order(exchange, positions, type, quote_asset):

@@ -135,6 +135,7 @@ def run_ordinary_future_task():
         print("Symbol", market.get('symbol'))
         Signal = find_signal_macd_4c_sign(exchange, market.get('symbol'), timeframe, limit)
         message = None
+
         if Signal == "Non-Signal":
             Signal = find_signal_ema_sign(exchange, market.get('symbol'), timeframe, limit)
 
@@ -192,14 +193,24 @@ def rebalacing_pair_of_symbol():
         diff_value = rebalance_mark - coin_value
         diff_value = diff_value / 2
 
+    message = "\n""### Rebalancing Trigger ###" 
+    message += "\n""Symbol " + pair_trade
+    message += "\n""Coin Unit " + coin_unit
+    message += "\n""Fiat Unit " + fiat_unit 
+    message += "\n""Coin Value " + coin_value
+    message += "\n""Rebalance Mark Sell " + rebalance_mark_sell 
+    message += "\n""Rebalance Mark Buy " + rebalance_mark_buy 
+
     if side != None and fiat_unit > 0:
         print(side, pair_trade, 'Amount', (diff_value / average))
         try:
             exchange_spot.create_order(pair_trade, 'market', side, (diff_value/average))
-            push_notify_message(LINE_NOTIFY_TOKEN, str(side).upper() + pair_trade + '\nAt ' + average + '\nFor' + (diff_value/average))
+            message += "\n" + str(side).upper() + " at " + average + " for " + (diff_value/average)
         except:
             print("Coin Less Than Min Limitation")
 
+    message += "\n""#######################" 
+    push_notify_message(LINE_NOTIFY_TOKEN, message)
     print("##########################")
 
 if __name__ == "__main__":
@@ -213,7 +224,7 @@ if __name__ == "__main__":
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
-    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
 
     try:
         scheduler.start()
