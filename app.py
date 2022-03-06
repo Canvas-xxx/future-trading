@@ -7,6 +7,7 @@ import settings as ENV
 from services.signal import detect_signal_sign, find_signal_ema_sign, find_signal_macd_4c_sign
 from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
 from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol, adjust_trailing_stop_position 
+from services.request import push_notify_message
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
@@ -20,6 +21,7 @@ TP_PERCENTAGE = ENV.TP_PERCENTAGE
 REBALANCING_COIN = ENV.REBALANCING_COIN
 REBALANCING_FAIT_COIN = ENV.REBALANCING_FAIT_COIN
 REBALANCING_PERCENTAGE = ENV.REBALANCING_PERCENTAGE
+LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
 
 exchange = ccxt.binanceusdm({
     'apiKey': API_KEY, 
@@ -132,21 +134,24 @@ def run_ordinary_future_task():
 
         print("Symbol", market.get('symbol'))
         Signal = find_signal_macd_4c_sign(exchange, market.get('symbol'), timeframe, limit)
+        message = None
         if Signal == "Non-Signal":
             Signal = find_signal_ema_sign(exchange, market.get('symbol'), timeframe, limit)
 
         if Signal  == "Buy_Signal":
             print("BUY-Trade")
-            create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
+            message = create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
           
         elif Signal  == "Sell_Signal":
             print("SELL-Trade")
-            create_stop_loss_order(exchange, market.get('symbol'), 'sell', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
+            message = create_stop_loss_order(exchange, market.get('symbol'), 'sell', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
     
         else:
             print("Non-Trade")
 
         index = index + 1
+        if message != None:
+            push_notify_message(LINE_NOTIFY_TOKEN, message)
         print("---------------------------------")
 
     print("##########################")
@@ -191,6 +196,7 @@ def rebalacing_pair_of_symbol():
         print(side, pair_trade, 'Amount', (diff_value / average))
         try:
             exchange_spot.create_order(pair_trade, 'market', side, (diff_value/average))
+            push_notify_message(LINE_NOTIFY_TOKEN, str(side).upper() + pair_trade + '\nAt ' + average + '\nFor' + (diff_value/average))
         except:
             print("Coin Less Than Min Limitation")
 
