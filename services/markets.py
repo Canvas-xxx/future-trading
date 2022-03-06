@@ -32,7 +32,7 @@ def get_market_list(exchange, type, quote_asset):
         
     sorted_markets = df_markets.sort_values(by="volume", ascending=False)
     
-    return sorted_markets.to_dict('records')[0:30]
+    return sorted_markets.to_dict('records')[0:50]
 
 def set_pair_leverage(exchange, pair, leverage):
     exchange.set_leverage(leverage, pair)
@@ -109,10 +109,13 @@ def cancel_unused_order(exchange, positions, type, quote_asset):
     exclude_symbol = list(filter(lambda sym: sym not in positions_symbol, markets_symbol))
     for sym in exclude_symbol:
         orders = exchange.fetch_orders(sym)
-        if len(orders) > 0:
-            print("Cancel", sym)
-            exchange.cancel_all_orders(sym)
-
+        for order in orders:
+            if order.get('type') == 'take_profit_market' or order.get('type') == 'stop_market':
+                try:
+                    exchange.cancel_order(order.get('id'), order.get('symbol'))
+                    print("Cancel", sym)
+                except:
+                    print(sym, "Missing Order Number")
     print("##########################")
 
 def get_average_price_by_symbol(exchange, symbol):

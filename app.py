@@ -122,9 +122,13 @@ def run_ordinary_future_task():
     none_position_market = list(filter(lambda market: market.get('symbol') not in positions_symbol, markets))
 
     print("\n""####### Trade Status #####")
+    index = 1
     for market in none_position_market:
         print("---------------------------------")
         set_pair_leverage(exchange, market.get('symbol'), leverage)
+
+        if index > 30:
+            return
 
         print("Symbol", market.get('symbol'))
         Signal = find_signal_macd_4c_sign(exchange, market.get('symbol'), timeframe, limit)
@@ -141,6 +145,8 @@ def run_ordinary_future_task():
     
         else:
             print("Non-Trade")
+
+        index = index + 1
         print("---------------------------------")
 
     print("##########################")
