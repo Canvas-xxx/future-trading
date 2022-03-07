@@ -227,7 +227,7 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Backtest Futures Signal
-    scheduler.add_job(schedule_backtest, 'cron', hour='*/' + str(duration * 2), minute='10', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest, 'cron', hour='*/12', minute='10', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
     # scheduler.add_job(trailing_stop_positions, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
