@@ -222,7 +222,7 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Futures Trading Schedule
-    scheduler.add_job(trailing_stop_positions, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
+    # scheduler.add_job(trailing_stop_positions, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(cancle_close_positions, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 
