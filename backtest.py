@@ -10,6 +10,7 @@ API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
 TF_DURATION = ENV.TF_DURATION
 TF_UNIT = ENV.TF_UNIT
+BACK_TEST_LIMIT = ENV.BACK_TEST_LIMIT
 SL_PERCENTAGE = int(4)
 TP_PERCENTAGE = int(12) 
 
@@ -26,7 +27,7 @@ exchange = ccxt.binanceusdm({
 
 def run_test():
     timeframe = TF_DURATION + TF_UNIT
-    limit = 2000
+    limit = BACK_TEST_LIMIT
     df_ohlcv = exchange.fetch_ohlcv(SYMBOL ,timeframe=timeframe, limit=limit)
     df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
     df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
