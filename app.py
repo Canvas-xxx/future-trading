@@ -18,6 +18,7 @@ RISK_OF_RUIN = ENV.RISK_OF_RUIN
 LEVERAGE = ENV.LEVERAGE
 SL_PERCENTAGE = ENV.SL_PERCENTAGE
 TP_PERCENTAGE = ENV.TP_PERCENTAGE
+FUTURE_POSITION_SIZE = ENV.FUTURE_POSITION_SIZE
 REBALANCING_COIN = ENV.REBALANCING_COIN
 REBALANCING_FAIT_COIN = ENV.REBALANCING_FAIT_COIN
 REBALANCING_PERCENTAGE = ENV.REBALANCING_PERCENTAGE
@@ -94,7 +95,10 @@ def run_ordinary_future_task():
     print("######################")
 
     print("\n""##########################")
-    position_size = get_position_size(balance, risk_of_ruin, stop_loss_percentage, leverage)
+    try:
+        position_size = FUTURE_POSITION_SIZE
+    except:
+        position_size = get_position_size(balance, risk_of_ruin, stop_loss_percentage, leverage)
     print("Position Size", position_size)
     print("##########################")
 
