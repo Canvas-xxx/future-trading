@@ -8,6 +8,7 @@ from services.signal import detect_signal_sign, find_signal_ema_sign, find_signa
 from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
 from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol, adjust_trailing_stop_position 
 from services.request import push_notify_message
+from backtest import schedule_backtest 
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
@@ -224,6 +225,9 @@ if __name__ == "__main__":
     print("\n""####### Run Scheduler #####")
     scheduler = BlockingScheduler()
     duration = int(TF_DURATION)
+
+    # Backtest Futures Signal
+    scheduler.add_job(schedule_backtest, 'cron', hour='*/' + str(duration * 2), minute='10', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
     # scheduler.add_job(trailing_stop_positions, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")

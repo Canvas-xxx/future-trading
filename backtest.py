@@ -1,10 +1,9 @@
 import ccxt
-import time
-import moment
-import pprint36 as pprint
 import settings as ENV
 import pandas as pd
 import pandas_ta as ta
+from services.markets import get_market_list
+from services.request import push_notify_message
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
@@ -13,6 +12,7 @@ TF_UNIT = ENV.TF_UNIT
 BACK_TEST_LIMIT = ENV.BACK_TEST_LIMIT
 SL_PERCENTAGE = int(4)
 TP_PERCENTAGE = int(12) 
+LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
 
 SYMBOL = "BTC/USDT"
 
@@ -25,10 +25,16 @@ exchange = ccxt.binanceusdm({
     }
 })
 
-def run_test():
+def schedule_backtest():
+    markets = get_market_list(exchange, 'future', 'USDT')
+    for market in markets:
+        run_test(market.get('symbol'))
+
+def run_test(symbol):
     timeframe = TF_DURATION + TF_UNIT
     limit = BACK_TEST_LIMIT
-    df_ohlcv = exchange.fetch_ohlcv(SYMBOL ,timeframe=timeframe, limit=limit)
+
+    df_ohlcv = exchange.fetch_ohlcv(symbol ,timeframe=timeframe, limit=limit)
     df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
     df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
 
@@ -41,22 +47,25 @@ def run_test():
     count = len(df_ohlcv)
     index = 50
 
-    print("Symbol", SYMBOL)
+    print("Symbol", symbol)
     print("TP PERCENTAGE", TP_PERCENTAGE)
     print("SL PERCENTAGE", SL_PERCENTAGE)
+
+    notify_message = None
 
     while index < count:
         df_ohlcv_range = df_ohlcv[0:index]
         if signal == None:
-            s = find_signal_macd_4c_sign(exchange, df_ohlcv_range, SYMBOL)
+            s = find_signal_macd_4c_sign(exchange, df_ohlcv_range, symbol)
             if s == "Buy_Signal" or s == "Sell_Signal":
-                # datetime = df_ohlcv['datetime'][index]
-                # print("Position", s, "At", datetime)
+                if total_signal == 0:
+                    datetime = df_ohlcv['datetime'][index]
+                    notify_message += "\n""### Backtest " + symbol + " Schedule ###"
+                    notify_message += "\n""Start at " + str(datetime)
                 position_price = df_ohlcv['open'][index-1]
                 signal = s
                 total_signal += 1
         elif signal != None:
-            # datetime = df_ohlcv['datetime'][index]
             last_candle_high = df_ohlcv['high'][index]
             last_candle_low = df_ohlcv['low'][index]
 
@@ -64,12 +73,10 @@ def run_test():
                 sl_price = (position_price * (1 - (SL_PERCENTAGE / 100))) 
                 tp_price = (position_price * ((TP_PERCENTAGE / 100) + 1)) 
                 if last_candle_low <= sl_price:
-                    # print("Fail Position", s, "At", datetime)
                     fail_signal += 1
                     signal = None
                     position_price = 0
                 elif last_candle_high >= tp_price: 
-                    # print("Success Position", s, "At", datetime)
                     success_signal += 1
                     signal = None
                     position_price = 0
@@ -77,12 +84,10 @@ def run_test():
                 sl_price = (position_price * ((SL_PERCENTAGE / 100) + 1)) 
                 tp_price = (position_price * (1 - (TP_PERCENTAGE / 100))) 
                 if last_candle_high >= sl_price:
-                    # print("Fail Position", s, "At", datetime)
                     fail_signal += 1
                     signal = None
                     position_price = 0
                 elif last_candle_low <= tp_price:
-                    # print("Success Position", s, "At", datetime)
                     success_signal += 1
                     signal = None
                     position_price = 0
@@ -92,6 +97,14 @@ def run_test():
     print("Success Signal", success_signal)
     print("Fail Signal", fail_signal)
     print("Win rate", str((success_signal / total_signal) * 100) + "%")
+    if total_signal > 0:
+        notify_message += "\n""Total Signal " + str(total_signal)
+        notify_message += "\n""Success Signal " + str(success_signal)
+        notify_message += "\n""Fail Signal " + str(fail_signal)
+        notify_message += "\n""Win Rate " + str((success_signal / total_signal) * 100) + "%"
+        notify_message += "\n""#########################"
+    if notify_message != None:
+        push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
     print("##################################")
 
 def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
@@ -137,6 +150,6 @@ if __name__ == "__main__":
     print("\n""####### Run Back Test #####")
 
     try:
-        run_test()
+        run_test(SYMBOL)
     except (KeyboardInterrupt, SystemExit):
         pass
