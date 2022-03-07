@@ -27,10 +27,14 @@ exchange = ccxt.binanceusdm({
 
 def schedule_backtest():
     markets = get_market_list(exchange, 'future', 'USDT')
-    for market in markets:
-        run_test(market.get('symbol'))
+    markets = markets[0:20]
 
-def run_test(symbol):
+    index = 1
+    for market in markets:
+        run_test(market.get('symbol'), index)
+        index += 1
+
+def run_test(symbol, i):
     timeframe = TF_DURATION + TF_UNIT
     limit = BACK_TEST_LIMIT
 
@@ -51,7 +55,9 @@ def run_test(symbol):
     print("TP PERCENTAGE", TP_PERCENTAGE)
     print("SL PERCENTAGE", SL_PERCENTAGE)
 
-    notify_message = None
+    notify_message = "\n""### Backtest Schedule ###"
+    notify_message += "\n""No." + str(i) + " "
+    notify_message += str(symbol)
 
     while index < count:
         df_ohlcv_range = df_ohlcv[0:index]
@@ -60,7 +66,6 @@ def run_test(symbol):
             if s == "Buy_Signal" or s == "Sell_Signal":
                 if total_signal == 0:
                     datetime = df_ohlcv['datetime'][index]
-                    notify_message += "\n""### Backtest " + symbol + " Schedule ###"
                     notify_message += "\n""Start at " + str(datetime)
                 position_price = df_ohlcv['open'][index-1]
                 signal = s
@@ -96,7 +101,10 @@ def run_test(symbol):
     print("Total Signal", total_signal)
     print("Success Signal", success_signal)
     print("Fail Signal", fail_signal)
-    print("Win rate", str((success_signal / total_signal) * 100) + "%")
+    try:
+        print("Win rate", str((success_signal / total_signal) * 100) + "%")
+    except:
+        print("Win rate", "0%")
     if total_signal > 0:
         notify_message += "\n""Total Signal " + str(total_signal)
         notify_message += "\n""Success Signal " + str(success_signal)
@@ -150,6 +158,6 @@ if __name__ == "__main__":
     print("\n""####### Run Back Test #####")
 
     try:
-        run_test(SYMBOL)
+        schedule_backtest()
     except (KeyboardInterrupt, SystemExit):
         pass
