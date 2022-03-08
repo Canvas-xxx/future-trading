@@ -28,17 +28,15 @@ def schedule_backtest():
     markets = get_market_list(exchange, 'future', 'USDT')
     markets = markets[0:15]
 
-    index = 1
     summary_total = 0
     summary_success = 0
     summary_fail = 0
 
     for market in markets:
-        total, success, fail = run_test(market.get('symbol'), index)
+        total, success, fail = backtest_symbol(market.get('symbol'))
         summary_total += total
         summary_success += success
         summary_fail += fail
-        index += 1
 
     if summary_total > 0 and summary_success > 0:
         notify_message = "### Backtest Schedule ###"
@@ -64,7 +62,35 @@ def schedule_backtest():
     if notify_message != None:
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
-def run_test(symbol, i):
+def position_backtest_symbol(symbol):
+    total, success, fail = backtest_symbol(symbol)
+
+    if total > 0 and success> 0:
+        notify_message = "### Current Position Backtest ###"
+        notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
+        notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
+        notify_message += "\n""Symbol " + str(symbol)
+        notify_message += "\n""Total Signal " + str(total)
+        notify_message += "\n""Success Signal " + str(success)
+        notify_message += "\n""Fault Signal " + str(fail)
+        try:
+            win_rate = (success / total) * 100
+        except:
+            win_rate = 0
+        notify_message += "\n""Win Rate " + str(win_rate) + "%"
+
+        try:
+            summary_profit = ((TP_PERCENTAGE * success) - (SL_PERCENTAGE * fail)) * LEVERAGE
+        except:
+            summary_profit = 0
+        notify_message += "\n""Summary Profit Percentage " + str(summary_profit) + "%"
+
+        notify_message += "\n""#################################"
+
+    if notify_message != None:
+        push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
+
+def backtest_symbol(symbol):
     timeframe = TF_DURATION + TF_UNIT
     limit = BACK_TEST_LIMIT
 

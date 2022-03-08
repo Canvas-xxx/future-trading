@@ -8,7 +8,7 @@ from services.signal import detect_signal_sign, find_signal_ema_sign, find_signa
 from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
 from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol, adjust_trailing_stop_position 
 from services.request import push_notify_message
-from backtest import schedule_backtest 
+from backtest import schedule_backtest, position_backtest_symbol 
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
@@ -47,6 +47,15 @@ def cancle_close_positions():
 def trailing_stop_positions():
     positions = get_positions_list(exchange)
     adjust_trailing_stop_position(exchange, positions, SL_PERCENTAGE)
+
+def backtest_current_positions():
+    positions = get_positions_list(exchange)
+    for position in positions:
+        try:
+            symbol = position.get('symbol')
+            position_backtest_symbol(symbol)
+        except:
+            print("Can not backtest current position")
 
 def future_schedule_job():
     print("############ Schedule(",moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),") ############")
@@ -227,7 +236,8 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Backtest Futures Signal
-    scheduler.add_job(schedule_backtest, 'cron', hour='*/12', minute='10', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest, 'cron', hour='*/24', minute='10', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
     # scheduler.add_job(trailing_stop_positions, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
