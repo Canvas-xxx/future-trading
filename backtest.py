@@ -139,7 +139,7 @@ def backtest_symbol(symbol):
         if signal == None:
             s = find_signal_macd_4c_sign(exchange, df_ohlcv_range, symbol)
             if s == "Buy_Signal" or s == "Sell_Signal":
-                datetime = df_ohlcv['datetime'][index]
+                datetime = df_ohlcv['datetime'][index-1]
                 print("Position at", datetime)
                 orders_date.append(datetime)
 
