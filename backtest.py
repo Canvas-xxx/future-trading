@@ -10,11 +10,10 @@ SECRET_KEY = ENV.SECRET_KEY
 TF_DURATION = ENV.TF_DURATION
 TF_UNIT = ENV.TF_UNIT
 BACK_TEST_LIMIT = ENV.BACK_TEST_LIMIT
-SL_PERCENTAGE = int(4)
-TP_PERCENTAGE = int(12) 
+SL_PERCENTAGE = ENV.SL_PERCENTAGE
+TP_PERCENTAGE = ENV.TP_PERCENTAGE
+LEVERAGE = ENV.LEVERAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
-
-SYMBOL = "BTC/USDT"
 
 exchange = ccxt.binanceusdm({
     'apiKey': API_KEY, 
@@ -27,12 +26,43 @@ exchange = ccxt.binanceusdm({
 
 def schedule_backtest():
     markets = get_market_list(exchange, 'future', 'USDT')
-    markets = markets[0:20]
+    markets = markets[0:15]
 
     index = 1
+    summary_total = 0
+    summary_success = 0
+    summary_fail = 0
+
     for market in markets:
-        run_test(market.get('symbol'), index)
+        total, success, fail = run_test(market.get('symbol'), index)
+        summary_total += total
+        summary_success += success
+        summary_fail += fail
         index += 1
+
+    if summary_total > 0 and summary_success > 0:
+        notify_message = "### Backtest Schedule ###"
+        notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
+        notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
+        notify_message += "\n""Total Signal " + str(summary_total)
+        notify_message += "\n""Success Signal " + str(summary_success)
+        notify_message += "\n""Fault Signal " + str(summary_fail)
+        try:
+            win_rate = (summary_success / summary_total) * 100
+        except:
+            win_rate = 0
+        notify_message += "\n""Win Rate " + str(win_rate) + "%"
+
+        try:
+            summary_profit = ((TP_PERCENTAGE * summary_success) - (SL_PERCENTAGE * summary_fail)) * LEVERAGE
+        except:
+            summary_profit = 0
+        notify_message += "\n""Summary Profit Percentage " + str(summary_profit) + "%"
+
+        notify_message += "\n""#########################"
+
+    if notify_message != None:
+        push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
 def run_test(symbol, i):
     timeframe = TF_DURATION + TF_UNIT
@@ -55,10 +85,6 @@ def run_test(symbol, i):
     print("TP PERCENTAGE", TP_PERCENTAGE)
     print("SL PERCENTAGE", SL_PERCENTAGE)
 
-    notify_message = "\n""### Backtest Schedule ###"
-    notify_message += "\n""No." + str(i) + " "
-    notify_message += str(symbol)
-
     while index < count:
         df_ohlcv_range = df_ohlcv[0:index]
         if signal == None:
@@ -66,7 +92,7 @@ def run_test(symbol, i):
             if s == "Buy_Signal" or s == "Sell_Signal":
                 if total_signal == 0:
                     datetime = df_ohlcv['datetime'][index]
-                    notify_message += "\n""Start at " + str(datetime)
+                    print("Start at", datetime)
                 position_price = df_ohlcv['open'][index-1]
                 signal = s
                 total_signal += 1
@@ -105,15 +131,9 @@ def run_test(symbol, i):
         print("Win rate", str((success_signal / total_signal) * 100) + "%")
     except:
         print("Win rate", "0%")
-    if total_signal > 0:
-        notify_message += "\n""Total Signal " + str(total_signal)
-        notify_message += "\n""Success Signal " + str(success_signal)
-        notify_message += "\n""Fail Signal " + str(fail_signal)
-        notify_message += "\n""Win Rate " + str((success_signal / total_signal) * 100) + "%"
-        notify_message += "\n""#########################"
-    if notify_message != None:
-        push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
+
     print("##################################")
+    return total_signal, success_signal, fail_signal
 
 def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
     Signal = "Non-Signal"
