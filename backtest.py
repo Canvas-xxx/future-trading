@@ -2,6 +2,7 @@ import ccxt
 import settings as ENV
 import pandas as pd
 import pandas_ta as ta
+import moment
 from services.markets import get_market_list
 from services.request import push_notify_message
 
@@ -31,18 +32,32 @@ def schedule_backtest():
     summary_total = 0
     summary_success = 0
     summary_fail = 0
+    orders_date_list = []
+    orders_date_dict = {}
 
     for market in markets:
-        total, success, fail = backtest_symbol(market.get('symbol'))
+        total, success, fail, orders_date = backtest_symbol(market.get('symbol'))
         summary_total += total
         summary_success += success
         summary_fail += fail
+        orders_date_list += orders_date
+
 
     notify_message = None
     if summary_total > 0 and summary_success > 0:
+        orders_date_list.sort()
+        orders_date_list = list(map(lambda order_d: moment.utc(order_d).format("YYYY-MM-DD"), orders_date_list))
+        orders_date_dict = {i:orders_date_list.count(i) for i in orders_date_list}
+
+        high_same_day_orders = 0
+        for date in orders_date_dict.keys():
+            if orders_date_dict[date] > high_same_day_orders:
+                high_same_day_orders = orders_date_dict[date]
+
         notify_message = "\n""### Backtest Schedule ###"
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
+        notify_message += "\n""Maximum Number of Positions " + str(high_same_day_orders)
         notify_message += "\n""Total Signal " + str(summary_total)
         notify_message += "\n""Success Signal " + str(summary_success)
         notify_message += "\n""Fault Signal " + str(summary_fail)
@@ -58,13 +73,13 @@ def schedule_backtest():
             summary_profit = 0
         notify_message += "\n""Summary Profit Percentage " + str(summary_profit) + "%"
 
-        notify_message += "\n""#########################"
+        notify_message += "\n""#####################"
 
     if notify_message != None:
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
 def position_backtest_symbol(symbol):
-    total, success, fail = backtest_symbol(symbol)
+    total, success, fail, orders_date = backtest_symbol(symbol)
 
     notify_message = None
     if total > 0 and success> 0:
@@ -72,6 +87,10 @@ def position_backtest_symbol(symbol):
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
         notify_message += "\n""Symbol " + str(symbol)
+        if len(orders_date) > 0:
+            notify_message += "\n""Positions At"
+            for order_date in orders_date:
+                notify_message += "\n" + moment.utc(order_date).format("YYYY-MM-DD HH:mm:ss")
         notify_message += "\n""Total Signal " + str(total)
         notify_message += "\n""Success Signal " + str(success)
         notify_message += "\n""Fault Signal " + str(fail)
@@ -87,7 +106,7 @@ def position_backtest_symbol(symbol):
             summary_profit = 0
         notify_message += "\n""Summary Profit Percentage " + str(summary_profit) + "%"
 
-        notify_message += "\n""#################################"
+        notify_message += "\n""###########################"
 
     if notify_message != None:
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
@@ -103,6 +122,8 @@ def backtest_symbol(symbol):
     total_signal = 0
     success_signal = 0
     fail_signal = 0
+    orders_date = []
+
     signal = None
     position_price = 0
 
@@ -118,9 +139,10 @@ def backtest_symbol(symbol):
         if signal == None:
             s = find_signal_macd_4c_sign(exchange, df_ohlcv_range, symbol)
             if s == "Buy_Signal" or s == "Sell_Signal":
-                if total_signal == 0:
-                    datetime = df_ohlcv['datetime'][index]
-                    print("Start at", datetime)
+                datetime = df_ohlcv['datetime'][index]
+                print("Position at", datetime)
+                orders_date.append(datetime)
+
                 position_price = df_ohlcv['open'][index-1]
                 signal = s
         elif signal != None:
@@ -164,7 +186,7 @@ def backtest_symbol(symbol):
         print("Win rate", "0%")
 
     print("##################################")
-    return total_signal, success_signal, fail_signal
+    return total_signal, success_signal, fail_signal, orders_date
 
 def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
     Signal = "Non-Signal"
