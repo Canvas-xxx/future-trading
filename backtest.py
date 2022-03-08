@@ -38,8 +38,9 @@ def schedule_backtest():
         summary_success += success
         summary_fail += fail
 
+    notify_message = None
     if summary_total > 0 and summary_success > 0:
-        notify_message = "### Backtest Schedule ###"
+        notify_message = "\n""### Backtest Schedule ###"
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
         notify_message += "\n""Total Signal " + str(summary_total)
@@ -65,8 +66,9 @@ def schedule_backtest():
 def position_backtest_symbol(symbol):
     total, success, fail = backtest_symbol(symbol)
 
+    notify_message = None
     if total > 0 and success> 0:
-        notify_message = "### Current Position Backtest ###"
+        notify_message = "\n""### Current Position Backtest ###"
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
         notify_message += "\n""Symbol " + str(symbol)
