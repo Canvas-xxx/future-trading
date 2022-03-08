@@ -95,7 +95,6 @@ def run_test(symbol, i):
                     print("Start at", datetime)
                 position_price = df_ohlcv['open'][index-1]
                 signal = s
-                total_signal += 1
         elif signal != None:
             last_candle_high = df_ohlcv['high'][index]
             last_candle_low = df_ohlcv['low'][index]
@@ -105,10 +104,12 @@ def run_test(symbol, i):
                 tp_price = (position_price * ((TP_PERCENTAGE / 100) + 1)) 
                 if last_candle_low <= sl_price:
                     fail_signal += 1
+                    total_signal += 1
                     signal = None
                     position_price = 0
                 elif last_candle_high >= tp_price: 
                     success_signal += 1
+                    total_signal += 1
                     signal = None
                     position_price = 0
             elif signal == "Sell_Signal":
@@ -116,10 +117,12 @@ def run_test(symbol, i):
                 tp_price = (position_price * (1 - (TP_PERCENTAGE / 100))) 
                 if last_candle_high >= sl_price:
                     fail_signal += 1
+                    total_signal += 1
                     signal = None
                     position_price = 0
                 elif last_candle_low <= tp_price:
                     success_signal += 1
+                    total_signal += 1
                     signal = None
                     position_price = 0
         index += 1
@@ -163,12 +166,12 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
 
     if macd_a > 0 and macd_b < 0:
         if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or (macdh_b > 0 and macdh_c < 0 and macdh_c > macdh_d) or (macdh_c > 0 and macdh_d < 0 and macdh_d > macdh_e) or (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
-            if rsi_a > 55 and rsi_a < 68:
+            if rsi_a > 50 and rsi_a < 70:
                 if (rsi_a - rsi_b) > 1:
                     Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
         if (macdh_a < 0 and macdh_b > 0 and macd_b < macdh_c) or (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
-            if rsi_a > 33 and rsi_a < 45:
+            if rsi_a > 30 and rsi_a < 50:
                 if (rsi_b - rsi_a) > 1:
                     Signal = "Sell_Signal"
 

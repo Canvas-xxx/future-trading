@@ -63,7 +63,7 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         print("MACD WILL UP TREND")
         if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or (macdh_b > 0 and macdh_c < 0 and macdh_c > macdh_d) or (macdh_c > 0 and macdh_d < 0 and macdh_d > macdh_e) or (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
             print("MACD HAS NEARLY CROSS UP")
-            if rsi_a > 55 and rsi_a < 68:
+            if rsi_a > 50 and rsi_a < 70:
                 print("RSI IS IN NORMAL RANGE")
                 if (rsi_a - rsi_b) > 1:
                     print("RSI IS UP")
@@ -72,7 +72,7 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         print("MACD WILL DOWN TREND")
         if (macdh_a < 0 and macdh_b > 0 and macd_b < macdh_c) or (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
             print("MACD HAS NEARLY CROSS DOWN")
-            if rsi_a > 33 and rsi_a < 45:
+            if rsi_a > 30 and rsi_a < 50:
                 print("RSI IS IN NORMAL RANGE")
                 if (rsi_b - rsi_a) > 1:
                     print("RSI IS DOWN")
