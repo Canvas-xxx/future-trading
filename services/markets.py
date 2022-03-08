@@ -25,7 +25,10 @@ def get_market_list(exchange, type, quote_asset):
     tickers = []
 
     for market in df_markets.values:
-        tickers.append(raws_tickers[market[0]].get('quoteVolume'))
+        try:
+            tickers.append(raws_tickers[market[0]].get('quoteVolume'))
+        except:
+            print("No market quoteVolume")
 
     tickers = pd.DataFrame(tickers, columns=["volume"])
     df_markets = pd.concat([df_markets, tickers], axis=1) 
