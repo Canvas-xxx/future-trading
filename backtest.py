@@ -35,7 +35,11 @@ def schedule_backtest():
     summary_fail = 0
     orders_date_list = []
     orders_date_dict = {}
+    count_success_position = 0
+    count_fail_position = 0
     count_has_position_symbol = 0
+    avg_success_candle = 0
+    avg_fault_candle = 0
     avg_all_symbol_close_candle = 0
 
     for market in markets:
@@ -47,7 +51,15 @@ def schedule_backtest():
         if total > 0:
             count_has_position_symbol += 1
             avg_all_symbol_close_candle += avg_close_candle
-
+            for order_inform in orders_inform_list:
+                st = order_inform.get("state")
+                cd = order_inform.get("candle")
+                if st == "S":
+                    count_success_position += 1
+                    avg_success_candle += cd
+                else:
+                    count_fail_position += 1
+                    avg_fault_candle += cd 
 
     notify_message = None
     if summary_total > 0 and summary_success > 0:
@@ -60,18 +72,23 @@ def schedule_backtest():
             if orders_date_dict[date] > high_same_day_orders:
                 high_same_day_orders = orders_date_dict[date]
 
-        try:
+        if avg_success_candle > 0:
+            avg_success_candle = math.ceil(avg_success_candle / count_success_position)
+        if avg_fault_candle > 0:
+            avg_fault_candle = math.ceil(avg_fault_candle / count_fail_position)
+        if avg_all_symbol_close_candle > 0: 
             avg_all_symbol_close_candle = math.ceil(avg_all_symbol_close_candle / count_has_position_symbol)
-        except:
-            avg_all_symbol_close_candle = 0
 
         notify_message = "\n""### Backtest Schedule ###"
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
+        notify_message += "\n""Start Order At " + str(orders_date_list[0])
         notify_message += "\n""Maximum Number of Positions " + str(high_same_day_orders)
         notify_message += "\n""Total Signal " + str(summary_total)
         notify_message += "\n""Success Signal " + str(summary_success)
         notify_message += "\n""Fault Signal " + str(summary_fail)
+        notify_message += "\n""Avg. Success Candle " + str(avg_success_candle)
+        notify_message += "\n""Avg. Fault Candle " + str(avg_fault_candle)
         notify_message += "\n""Avg. Close Position Candle " + str(avg_all_symbol_close_candle)
         try:
             win_rate = (summary_success / summary_total) * 100
@@ -93,6 +110,11 @@ def schedule_backtest():
 def position_backtest_symbol(symbol):
     total, success, fail, orders_inform_list, avg_close_candle = backtest_symbol(symbol)
 
+    count_success_position = 0
+    count_fail_position = 0
+    avg_success_candle = 0
+    avg_fault_candle = 0
+
     notify_message = None
     if total > 0 and success> 0:
         notify_message = "\n""### Current Position Backtest ###"
@@ -106,10 +128,24 @@ def position_backtest_symbol(symbol):
                 cd = order_inform.get("candle")
                 st = order_inform.get("state")
                 notify_message += "\n" + moment.utc(dt).format("YYYY-MM-DD HH:mm:ss") + " (" + str(cd) + ")" + "[" + st + "]"
+                if st == "S":
+                    count_success_position += 1
+                    avg_success_candle += cd
+                else:
+                    count_fail_position += 1
+                    avg_fault_candle += cd
+            if avg_success_candle > 0:
+                avg_success_candle = math.ceil(avg_success_candle / count_success_position)
+            if avg_fault_candle > 0:
+                avg_fault_candle = math.ceil(avg_fault_candle / count_fail_position)
+
         notify_message += "\n""Total Signal " + str(total)
         notify_message += "\n""Success Signal " + str(success)
         notify_message += "\n""Fault Signal " + str(fail)
+        notify_message += "\n""Avg. Success Candle " + str(avg_success_candle)
+        notify_message += "\n""Avg. Fault Candle " + str(avg_fault_candle)
         notify_message += "\n""Avg. Close Position Length " + str(avg_close_candle)
+
         try:
             win_rate = (success / total) * 100
         except:
