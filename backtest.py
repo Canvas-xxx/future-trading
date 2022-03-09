@@ -3,6 +3,7 @@ import settings as ENV
 import pandas as pd
 import pandas_ta as ta
 import moment
+import math
 from services.markets import get_market_list
 from services.request import push_notify_message
 
@@ -27,20 +28,25 @@ exchange = ccxt.binanceusdm({
 
 def schedule_backtest():
     markets = get_market_list(exchange, 'future', 'USDT')
-    markets = markets[0:15]
+    markets = markets[0:30]
 
     summary_total = 0
     summary_success = 0
     summary_fail = 0
     orders_date_list = []
     orders_date_dict = {}
+    count_has_position_symbol = 0
+    stack_max_length_positions = 0
 
     for market in markets:
-        total, success, fail, orders_date = backtest_symbol(market.get('symbol'))
+        total, success, fail, orders_date, max_length_position = backtest_symbol(market.get('symbol'))
         summary_total += total
         summary_success += success
         summary_fail += fail
         orders_date_list += orders_date
+        if total > 0:
+            count_has_position_symbol += 1
+            stack_max_length_positions += max_length_position
 
 
     notify_message = None
@@ -54,6 +60,8 @@ def schedule_backtest():
             if orders_date_dict[date] > high_same_day_orders:
                 high_same_day_orders = orders_date_dict[date]
 
+        avg_max_length_positions = math.ceil(stack_max_length_positions / count_has_position_symbol)
+
         notify_message = "\n""### Backtest Schedule ###"
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
@@ -61,6 +69,7 @@ def schedule_backtest():
         notify_message += "\n""Total Signal " + str(summary_total)
         notify_message += "\n""Success Signal " + str(summary_success)
         notify_message += "\n""Fault Signal " + str(summary_fail)
+        notify_message += "\n""Average Close Position Candle " + str(avg_max_length_positions)
         try:
             win_rate = (summary_success / summary_total) * 100
         except:
@@ -79,7 +88,7 @@ def schedule_backtest():
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
 def position_backtest_symbol(symbol):
-    total, success, fail, orders_date = backtest_symbol(symbol)
+    total, success, fail, orders_date, max_length_position = backtest_symbol(symbol)
 
     notify_message = None
     if total > 0 and success> 0:
@@ -94,6 +103,7 @@ def position_backtest_symbol(symbol):
         notify_message += "\n""Total Signal " + str(total)
         notify_message += "\n""Success Signal " + str(success)
         notify_message += "\n""Fault Signal " + str(fail)
+        notify_message += "\n""Maximum Close Position Length " + str(max_length_position)
         try:
             win_rate = (success / total) * 100
         except:
@@ -124,6 +134,9 @@ def backtest_symbol(symbol):
     fail_signal = 0
     orders_date = []
 
+    length_position = 0
+    max_length_position = 0
+
     signal = None
     position_price = 0
 
@@ -150,6 +163,7 @@ def backtest_symbol(symbol):
             last_candle_low = df_ohlcv['low'][index]
 
             if signal == "Buy_Signal":
+                length_position += 1
                 sl_price = (position_price * (1 - (SL_PERCENTAGE / 100))) 
                 tp_price = (position_price * ((TP_PERCENTAGE / 100) + 1)) 
                 if last_candle_low <= sl_price:
@@ -157,12 +171,19 @@ def backtest_symbol(symbol):
                     total_signal += 1
                     signal = None
                     position_price = 0
+                    if max_length_position < length_position:
+                        max_length_position = length_position
+                        length_position = 0
                 elif last_candle_high >= tp_price: 
                     success_signal += 1
                     total_signal += 1
                     signal = None
                     position_price = 0
+                    if max_length_position < length_position:
+                        max_length_position = length_position
+                        length_position = 0
             elif signal == "Sell_Signal":
+                length_position += 1
                 sl_price = (position_price * ((SL_PERCENTAGE / 100) + 1)) 
                 tp_price = (position_price * (1 - (TP_PERCENTAGE / 100))) 
                 if last_candle_high >= sl_price:
@@ -170,23 +191,30 @@ def backtest_symbol(symbol):
                     total_signal += 1
                     signal = None
                     position_price = 0
+                    if max_length_position < length_position:
+                        max_length_position = length_position
+                        length_position = 0
                 elif last_candle_low <= tp_price:
                     success_signal += 1
                     total_signal += 1
                     signal = None
                     position_price = 0
+                    if max_length_position < length_position:
+                        max_length_position = length_position
+                        length_position = 0
         index += 1
 
     print("Total Signal", total_signal)
     print("Success Signal", success_signal)
     print("Fail Signal", fail_signal)
+    print("Maximum Close Position Candle ", max_length_position)
     try:
         print("Win rate", str((success_signal / total_signal) * 100) + "%")
     except:
         print("Win rate", "0%")
 
     print("##################################")
-    return total_signal, success_signal, fail_signal, orders_date
+    return total_signal, success_signal, fail_signal, orders_date, max_length_position
 
 def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
     Signal = "Non-Signal"
