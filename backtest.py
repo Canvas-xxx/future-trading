@@ -36,17 +36,17 @@ def schedule_backtest():
     orders_date_list = []
     orders_date_dict = {}
     count_has_position_symbol = 0
-    stack_max_length_positions = 0
+    avg_all_symbol_close_candle = 0
 
     for market in markets:
-        total, success, fail, orders_date, max_length_position = backtest_symbol(market.get('symbol'))
+        total, success, fail, orders_inform_list, avg_close_candle = backtest_symbol(market.get('symbol'))
         summary_total += total
         summary_success += success
         summary_fail += fail
-        orders_date_list += orders_date
+        orders_date_list += list(map(lambda order_inform: order_inform.get("datetime"), orders_inform_list))
         if total > 0:
             count_has_position_symbol += 1
-            stack_max_length_positions += max_length_position
+            avg_all_symbol_close_candle += avg_close_candle
 
 
     notify_message = None
@@ -60,7 +60,10 @@ def schedule_backtest():
             if orders_date_dict[date] > high_same_day_orders:
                 high_same_day_orders = orders_date_dict[date]
 
-        avg_max_length_positions = math.ceil(stack_max_length_positions / count_has_position_symbol)
+        try:
+            avg_all_symbol_close_candle = math.ceil(avg_all_symbol_close_candle / count_has_position_symbol)
+        except:
+            avg_all_symbol_close_candle = 0
 
         notify_message = "\n""### Backtest Schedule ###"
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
@@ -69,7 +72,7 @@ def schedule_backtest():
         notify_message += "\n""Total Signal " + str(summary_total)
         notify_message += "\n""Success Signal " + str(summary_success)
         notify_message += "\n""Fault Signal " + str(summary_fail)
-        notify_message += "\n""Average Close Position Candle " + str(avg_max_length_positions)
+        notify_message += "\n""Avg. Close Position Candle " + str(avg_all_symbol_close_candle)
         try:
             win_rate = (summary_success / summary_total) * 100
         except:
@@ -88,7 +91,7 @@ def schedule_backtest():
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
 def position_backtest_symbol(symbol):
-    total, success, fail, orders_date, max_length_position = backtest_symbol(symbol)
+    total, success, fail, orders_inform_list, avg_close_candle = backtest_symbol(symbol)
 
     notify_message = None
     if total > 0 and success> 0:
@@ -96,14 +99,17 @@ def position_backtest_symbol(symbol):
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
         notify_message += "\n""Symbol " + str(symbol)
-        if len(orders_date) > 0:
+        if len(orders_inform_list) > 0:
             notify_message += "\n""Positions At"
-            for order_date in orders_date:
-                notify_message += "\n" + moment.utc(order_date).format("YYYY-MM-DD HH:mm:ss")
+            for order_inform in orders_inform_list:
+                dt = order_inform.get("datetime")
+                cd = order_inform.get("candle")
+                st = order_inform.get("state")
+                notify_message += "\n" + moment.utc(dt).format("YYYY-MM-DD HH:mm:ss") + " (" + str(cd) + ")" + "[" + st + "]"
         notify_message += "\n""Total Signal " + str(total)
         notify_message += "\n""Success Signal " + str(success)
         notify_message += "\n""Fault Signal " + str(fail)
-        notify_message += "\n""Maximum Close Position Length " + str(max_length_position)
+        notify_message += "\n""Avg. Close Position Length " + str(avg_close_candle)
         try:
             win_rate = (success / total) * 100
         except:
@@ -132,10 +138,13 @@ def backtest_symbol(symbol):
     total_signal = 0
     success_signal = 0
     fail_signal = 0
-    orders_date = []
+    datetime = None
 
-    length_position = 0
-    max_length_position = 0
+    count_has_position_symbol = 0
+    count_candle_each_position = 0
+    avg_close_candle = 0
+
+    orders_inform_list = []
 
     signal = None
     position_price = 0
@@ -149,72 +158,93 @@ def backtest_symbol(symbol):
 
     while index < count:
         df_ohlcv_range = df_ohlcv[0:index]
+
         if signal == None:
             s = find_signal_macd_4c_sign(exchange, df_ohlcv_range, symbol)
             if s == "Buy_Signal" or s == "Sell_Signal":
                 datetime = df_ohlcv['datetime'][index-1]
-                print("Position at", datetime)
-                orders_date.append(datetime)
-
                 position_price = df_ohlcv['open'][index-1]
+                count_candle_each_position = 0
                 signal = s
         elif signal != None:
             last_candle_high = df_ohlcv['high'][index]
             last_candle_low = df_ohlcv['low'][index]
 
             if signal == "Buy_Signal":
-                length_position += 1
+                avg_close_candle += 1
+                count_candle_each_position += 1
                 sl_price = (position_price * (1 - (SL_PERCENTAGE / 100))) 
                 tp_price = (position_price * ((TP_PERCENTAGE / 100) + 1)) 
+
                 if last_candle_low <= sl_price:
                     fail_signal += 1
                     total_signal += 1
                     signal = None
-                    position_price = 0
-                    if max_length_position < length_position:
-                        max_length_position = length_position
-                        length_position = 0
+                    count_has_position_symbol += 1
+                    print("Position at", datetime, "(" + str(count_candle_each_position) + ")", "[F]")
+                    orders_inform_list.append({
+                        "datetime": datetime,
+                        "candle": count_candle_each_position,
+                        "state": "F"
+                    })
                 elif last_candle_high >= tp_price: 
                     success_signal += 1
                     total_signal += 1
                     signal = None
-                    position_price = 0
-                    if max_length_position < length_position:
-                        max_length_position = length_position
-                        length_position = 0
+                    count_has_position_symbol += 1
+                    print("Position at", datetime, "(" + str(count_candle_each_position) + ")", "[S]")
+                    orders_inform_list.append({
+                        "datetime": datetime,
+                        "candle": count_candle_each_position,
+                        "state": "S"
+                    })
             elif signal == "Sell_Signal":
-                length_position += 1
+                avg_close_candle += 1
+                count_candle_each_position += 1
                 sl_price = (position_price * ((SL_PERCENTAGE / 100) + 1)) 
                 tp_price = (position_price * (1 - (TP_PERCENTAGE / 100))) 
+
                 if last_candle_high >= sl_price:
                     fail_signal += 1
                     total_signal += 1
                     signal = None
-                    position_price = 0
-                    if max_length_position < length_position:
-                        max_length_position = length_position
-                        length_position = 0
+                    count_has_position_symbol += 1
+                    print("Position at", datetime, "(" + str(count_candle_each_position) + ")", "[F]")
+                    orders_inform_list.append({
+                        "datetime": datetime,
+                        "candle": count_candle_each_position,
+                        "state": "F"
+                    })
                 elif last_candle_low <= tp_price:
                     success_signal += 1
                     total_signal += 1
                     signal = None
-                    position_price = 0
-                    if max_length_position < length_position:
-                        max_length_position = length_position
-                        length_position = 0
+                    count_has_position_symbol += 1
+                    print("Position at", datetime, "(" + str(count_candle_each_position) + ")", "[S]")
+                    orders_inform_list.append({
+                        "datetime": datetime,
+                        "candle": count_candle_each_position,
+                        "state": "S"
+                    })
+
         index += 1
+
+    try:
+        avg_close_candle = math.ceil(avg_close_candle/count_has_position_symbol)
+    except:
+        avg_close_candle = 0
 
     print("Total Signal", total_signal)
     print("Success Signal", success_signal)
     print("Fail Signal", fail_signal)
-    print("Maximum Close Position Candle ", max_length_position)
+    print("Avg. Close Position Candle ", avg_close_candle)
     try:
         print("Win rate", str((success_signal / total_signal) * 100) + "%")
     except:
         print("Win rate", "0%")
 
     print("##################################")
-    return total_signal, success_signal, fail_signal, orders_date, max_length_position
+    return total_signal, success_signal, fail_signal, orders_inform_list, avg_close_candle 
 
 def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
     Signal = "Non-Signal"
