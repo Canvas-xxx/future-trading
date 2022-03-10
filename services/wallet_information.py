@@ -1,3 +1,5 @@
+import pprint36 as pprint
+
 def get_position_size(balance, risk_of_ruin, stop_loss, leverage):
     return balance * risk_of_ruin / stop_loss / leverage
 
@@ -8,8 +10,9 @@ def get_usdt_balance_in_future_wallet(exchange):
 
 def get_positions_list(exchange):
     try:
-        positions = exchange.fetch_positions()
-        filtered_positions = filter(lambda x: x.get('side') != None, positions)
+        balance = exchange.fetch_balance()
+        positions = balance['info']['positions']
+        filtered_positions = filter(lambda x: float(x.get('positionAmt')) > 0, positions)
         return list(filtered_positions)
     except:
         return list([])

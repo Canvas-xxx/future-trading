@@ -295,6 +295,9 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
         macd_a = df_ohlcv['MACD_12_26_9'][count-2]
         macd_b = df_ohlcv['MACD_12_26_9'][count-3]
 
+        rsi_a = df_ohlcv['RSI_14'][count-2]
+        rsi_b = df_ohlcv['RSI_14'][count-3]
+
         macdh_a = df_ohlcv['MACDh_12_26_9'][count-2]
         macdh_b = df_ohlcv['MACDh_12_26_9'][count-3]
         macdh_c = df_ohlcv['MACDh_12_26_9'][count-4]
@@ -302,19 +305,24 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
         macdh_e = df_ohlcv['MACDh_12_26_9'][count-6]
         macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
         macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
-
-        rsi_a = df_ohlcv['RSI_14'][count-2]
-        rsi_b = df_ohlcv['RSI_14'][count-3]
     except:
         return Signal
 
     if macd_a > 0 and macd_b < 0:
-        if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or (macdh_b > 0 and macdh_c < 0 and macdh_c > macdh_d) or (macdh_c > 0 and macdh_d < 0 and macdh_d > macdh_e) or (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
+        if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or \
+        (macdh_b > 0 and macdh_c < 0 and macdh_c > macdh_d) or \
+        (macdh_c > 0 and macdh_d < 0 and macdh_d > macdh_e) or \
+        (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or \
+        (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
             if rsi_a > 50 and rsi_a < 70:
                 if (rsi_a - rsi_b) > 1:
                     Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
-        if (macdh_a < 0 and macdh_b > 0 and macd_b < macdh_c) or (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
+        if (macdh_a < 0 and macdh_b > 0 and macd_b < macdh_c) or \
+        (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or \
+        (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or \
+        (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or \
+        (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
             if rsi_a > 30 and rsi_a < 50:
                 if (rsi_b - rsi_a) > 1:
                     Signal = "Sell_Signal"

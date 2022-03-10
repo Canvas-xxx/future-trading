@@ -46,6 +46,9 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         macd_a = df_ohlcv['MACD_12_26_9'][count-2]
         macd_b = df_ohlcv['MACD_12_26_9'][count-3]
 
+        rsi_a = df_ohlcv['RSI_14'][count-2]
+        rsi_b = df_ohlcv['RSI_14'][count-3]
+
         macdh_a = df_ohlcv['MACDh_12_26_9'][count-2]
         macdh_b = df_ohlcv['MACDh_12_26_9'][count-3]
         macdh_c = df_ohlcv['MACDh_12_26_9'][count-4]
@@ -53,15 +56,16 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         macdh_e = df_ohlcv['MACDh_12_26_9'][count-6]
         macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
         macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
-
-        rsi_a = df_ohlcv['RSI_14'][count-2]
-        rsi_b = df_ohlcv['RSI_14'][count-3]
     except:
         return Signal
 
     if macd_a > 0 and macd_b < 0:
         print("MACD WILL UP TREND")
-        if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or (macdh_b > 0 and macdh_c < 0 and macdh_c > macdh_d) or (macdh_c > 0 and macdh_d < 0 and macdh_d > macdh_e) or (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
+        if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or \
+        (macdh_b > 0 and macdh_c < 0 and macdh_c > macdh_d) or \
+        (macdh_c > 0 and macdh_d < 0 and macdh_d > macdh_e) or \
+        (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or \
+        (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
             print("MACD HAS NEARLY CROSS UP")
             if rsi_a > 50 and rsi_a < 70:
                 print("RSI IS IN NORMAL RANGE")
@@ -70,7 +74,11 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
                     Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
         print("MACD WILL DOWN TREND")
-        if (macdh_a < 0 and macdh_b > 0 and macd_b < macdh_c) or (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
+        if (macdh_a < 0 and macdh_b > 0 and macd_b < macdh_c) or \
+        (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or \
+        (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or \
+        (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or \
+        (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
             print("MACD HAS NEARLY CROSS DOWN")
             if rsi_a > 30 and rsi_a < 50:
                 print("RSI IS IN NORMAL RANGE")
