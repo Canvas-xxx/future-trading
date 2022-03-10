@@ -123,8 +123,6 @@ def cancel_unused_order(exchange, positions, type, quote_asset):
     positions_symbol = list(map(lambda position: position.get('symbol'), positions)) 
     markets_symbol = list(map(lambda market: market.get('symbol'), markets))
     exclude_symbol = list(filter(lambda sym: sym not in positions_symbol, markets_symbol))
-    print("Current Positions", positions_symbol)
-    print("Exclude Positions", exclude_symbol)
     for sym in exclude_symbol:
         orders = exchange.fetch_orders(sym)
         for order in orders:

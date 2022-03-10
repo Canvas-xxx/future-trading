@@ -13,13 +13,23 @@ def get_positions_list(exchange, fiat):
         balance = exchange.fetch_balance()
         positions = balance['info']['positions']
         filtered_positions = list(filter(lambda x: float(x.get('entryPrice')) != 0, positions))
-        filtered_positions = list(map(lambda x: { 'symbol': replace_symbol(x.get('symbol'), fiat) }, filtered_positions))
+        filtered_positions = list(map(lambda x: { \
+            'symbol': replace_symbol(x.get('symbol'), fiat), \
+            'contracts': replace_position_amount(x.get('positionAmt')) \
+        }, filtered_positions))
         return filtered_positions
     except:
         return []
 
 def replace_symbol(symbol, fiat):
     return re.sub('\/?(' + fiat + ')$', '/' + fiat, symbol)
+
+def replace_position_amount(amount):
+    amt = float(amount)
+    if amt >= 0:
+        return amt
+    else:
+        return amt * -1
 
 def get_unit_of_symbol(exchange, coin, fiat):
     balance = exchange.fetch_balance()
