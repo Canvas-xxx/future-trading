@@ -41,15 +41,15 @@ exchange_spot = ccxt.binance({
 })
 
 def cancle_close_positions():
-    positions = get_positions_list(exchange)
+    positions = get_positions_list(exchange, 'USDT')
     cancel_unused_order(exchange, positions, 'future', 'USDT')
 
 def trailing_stop_positions():
-    positions = get_positions_list(exchange)
+    positions = get_positions_list(exchange, 'USDT')
     adjust_trailing_stop_position(exchange, positions, SL_PERCENTAGE)
 
 def backtest_current_positions():
-    positions = get_positions_list(exchange)
+    positions = get_positions_list(exchange, 'USDT')
     for position in positions:
         try:
             symbol = position.get('symbol')
@@ -113,7 +113,7 @@ def run_ordinary_future_task():
     print("##########################")
 
     print("\n""####### Positions Stop Loss #####")
-    positions = get_positions_list(exchange)
+    positions = get_positions_list(exchange, 'USDT')
     for position in positions:
         detect_signal = detect_signal_sign(exchange, position.get('symbol'), timeframe, limit)
         if position.get('side') == "long" and detect_signal == "SELL_POSITION":
@@ -129,7 +129,7 @@ def run_ordinary_future_task():
     print("##########################")
 
     print("\n""####### Current Positions List #####")
-    positions = get_positions_list(exchange)
+    positions = get_positions_list(exchange, 'USDT')
     positions_symbol = list(map(lambda position: position.get('symbol'), positions)) 
     pprint.pprint(positions_symbol)
     print("##########################")
@@ -241,7 +241,7 @@ if __name__ == "__main__":
 
     # Futures Trading Schedule
     # scheduler.add_job(trailing_stop_positions, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(cancle_close_positions, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(cancle_close_positions, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
