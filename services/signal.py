@@ -58,7 +58,7 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
         macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
 
-        upward, downward = range_filter_signal(df_ohlcv, 100, 4)
+        _, upward, downward = range_filter_signal(df_ohlcv, 100, 4)
     except:
         return Signal
 
@@ -162,7 +162,7 @@ def range_filter_signal(source, period, multiple):
         smrng = exp_moving_average(avrng, (period*2-1)) * multiple
         filt = range_filter(source, smrng)
     except:
-        return upward, downward 
+        return None, upward, downward 
 
     j = 0
     back_filt = 0
@@ -187,7 +187,7 @@ def range_filter_signal(source, period, multiple):
 
         j += 1
 
-    return upward, downward
+    return filt, upward, downward
 
 def exp_moving_average(values, window):
     weights = np.exp(np.linspace(1., 0., window))

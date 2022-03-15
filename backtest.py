@@ -307,7 +307,7 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
         macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
         macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
         
-        upward, downward = range_filter_signal(df_ohlcv, 100, 4)
+        _, upward, downward = range_filter_signal(df_ohlcv, 100, 4)
     except:
         return Signal
 
