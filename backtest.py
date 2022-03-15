@@ -2,11 +2,11 @@ import ccxt
 import settings as ENV
 import pandas as pd
 import pandas_ta as ta
-import numpy as np
 import moment
 import math
 from services.markets import get_market_list
 from services.request import push_notify_message
+from services.signal import range_filter_signal
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
@@ -306,45 +306,8 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
         macdh_e = df_ohlcv['MACDh_12_26_9'][count-6]
         macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
         macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
-
-        close_list = df_ohlcv['close'][:count-1]
-        close_list_1 = [0]
-        limit = len(close_list)
-        index = 0
-        while index < (limit - 1):
-            close_list_1.append(close_list[index])
-            index += 1
-
-        per = 100
-        mult = 4
-
-        avrng = ExpMovingAverage(abs(close_list - close_list_1), per)
-        smrng = ExpMovingAverage(avrng, (per*2-1)) * mult
         
-        filt = RangeFilter(close_list, smrng)
-
-        upward = [0]
-        downward = [0]
-        i = 0
-        back_filt = 0
-        while i < len(filt):
-            len_ward = len(upward)
-            if i > 0:
-                back_filt = filt[i-1]
-            if filt[i] > back_filt:
-                upward.append(upward[len_ward-1] + 1)
-            elif filt[i] < back_filt:
-                upward.append(0)
-            else:
-                upward.append(upward[len_ward-1])
-
-            if filt[i] < back_filt:
-                downward.append(downward[len_ward-1] + 1)
-            elif filt[i] > back_filt:
-                downward.append(0)
-            else:
-                downward.append(downward[len_ward-1])
-            i += 1 
+        upward, downward = range_filter_signal(df_ohlcv, 100, 4)
     except:
         return Signal
 
@@ -369,31 +332,6 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
                     Signal = "Sell_Signal"
 
     return Signal
-
-def ExpMovingAverage(values, window):
-    weights = np.exp(np.linspace(1., 0., window))
-    weights /= weights.sum()
-    a = np.convolve(values, weights, mode='full')[:len(values)]
-    a[:window] = a[window]
-    return a
-
-def RangeFilter(x, r):
-    nz_rng = [0]
-
-    index = 0
-    while index < len(x):
-        len_rng = len(nz_rng)
-        if x[index] > nz_rng[len_rng - 1]:
-            if (x[index] - r[index]) < nz_rng[len_rng - 1]:
-                nz_rng.append(nz_rng[len_rng - 1])
-            else:
-                nz_rng.append(x[index] - r[index])
-        elif (x[index] + r[index] > nz_rng[len_rng - 1]):
-            nz_rng.append(nz_rng[len_rng - 1])
-        else:
-            nz_rng.append(x[index] + r[index])
-        index += 1
-    return nz_rng
 
 if __name__ == "__main__":
     print("\n""####### Run Back Test #####")

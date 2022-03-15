@@ -58,44 +58,7 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
         macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
 
-        close_list = df_ohlcv['close'][:count-1]
-        close_list_1 = [0]
-        limit = len(close_list)
-        index = 0
-        while index < (limit - 1):
-            close_list_1.append(close_list[index])
-            index += 1
-
-        per = 100
-        mult = 4
-
-        avrng = ExpMovingAverage(abs(close_list - close_list_1), per)
-        smrng = ExpMovingAverage(avrng, (per*2-1)) * mult
-        
-        filt = RangeFilter(close_list, smrng)
-
-        upward = [0]
-        downward = [0]
-        i = 0
-        back_filt = 0
-        while i < len(filt):
-            len_ward = len(upward)
-            if i > 0:
-                back_filt = filt[i-1]
-            if filt[i] > back_filt:
-                upward.append(upward[len_ward-1] + 1)
-            elif filt[i] < back_filt:
-                upward.append(0)
-            else:
-                upward.append(upward[len_ward-1])
-
-            if filt[i] < back_filt:
-                downward.append(downward[len_ward-1] + 1)
-            elif filt[i] > back_filt:
-                downward.append(0)
-            else:
-                downward.append(downward[len_ward-1])
-            i += 1 
+        upward, downward = range_filter_signal(df_ohlcv, 100, 4)
     except:
         return Signal
 
@@ -180,14 +143,60 @@ def find_signal_ema_sign(exchange, pair, timeframe, limit):
  
     return Signal
 
-def ExpMovingAverage(values, window):
+def range_filter_signal(source, period, multiple):
+    count = len(source)
+    source = source['close'][:count-1]
+    source_1 = [0]
+
+    source_len = len(source)
+    i = 0
+    while i < (source_len-1):
+        source_1.append(source[i])
+        i += 1
+
+    upward = [0]
+    downward = [0]
+
+    try:
+        avrng = exp_moving_average(abs(source-source_1), period)
+        smrng = exp_moving_average(avrng, (period*2-1)) * multiple
+        filt = range_filter(source, smrng)
+    except:
+        return upward, downward 
+
+    j = 0
+    back_filt = 0
+    while j < len(filt):
+        len_ward = len(upward)
+        if j > 0:
+            back_filt = filt[j-1]
+
+        if filt[j] > back_filt:
+            upward.append(upward[len_ward-1] + 1)
+        elif filt[j] < back_filt:
+            upward.append(0)
+        else:
+            upward.append(upward[len_ward-1])
+
+        if filt[j] < back_filt:
+            downward.append(downward[len_ward-1] + 1)
+        elif filt[j] > back_filt:
+            downward.append(0)
+        else:
+            downward.append(downward[len_ward-1])
+
+        j += 1
+
+    return upward, downward
+
+def exp_moving_average(values, window):
     weights = np.exp(np.linspace(1., 0., window))
     weights /= weights.sum()
     a = np.convolve(values, weights, mode='full')[:len(values)]
     a[:window] = a[window]
     return a
 
-def RangeFilter(x, r):
+def range_filter(x, r):
     nz_rng = [0]
 
     index = 0
