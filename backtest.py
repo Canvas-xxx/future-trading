@@ -2,6 +2,7 @@ import ccxt
 import settings as ENV
 import pandas as pd
 import pandas_ta as ta
+import numpy as np
 import moment
 import math
 from services.markets import get_market_list
@@ -305,17 +306,57 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
         macdh_e = df_ohlcv['MACDh_12_26_9'][count-6]
         macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
         macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
+
+        close_list = df_ohlcv['close'][:count-1]
+        close_list_1 = [0]
+        limit = len(close_list)
+        index = 0
+        while index < (limit - 1):
+            close_list_1.append(close_list[index])
+            index += 1
+
+        per = 100
+        mult = 4
+
+        avrng = ExpMovingAverage(abs(close_list - close_list_1), per)
+        smrng = ExpMovingAverage(avrng, (per*2-1)) * mult
+        
+        filt = RangeFilter(close_list, smrng)
+
+        upward = [0]
+        downward = [0]
+        i = 0
+        back_filt = 0
+        while i < len(filt):
+            len_ward = len(upward)
+            if i > 0:
+                back_filt = filt[i-1]
+            if filt[i] > back_filt:
+                upward.append(upward[len_ward-1] + 1)
+            elif filt[i] < back_filt:
+                upward.append(0)
+            else:
+                upward.append(upward[len_ward-1])
+
+            if filt[i] < back_filt:
+                downward.append(downward[len_ward-1] + 1)
+            elif filt[i] > back_filt:
+                downward.append(0)
+            else:
+                downward.append(downward[len_ward-1])
+            i += 1 
     except:
         return Signal
 
+    len_ward = len(upward)
     if macd_a > 0 and macd_b < 0:
         if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or \
         (macdh_b > 0 and macdh_c < 0 and macdh_c > macdh_d) or \
         (macdh_c > 0 and macdh_d < 0 and macdh_d > macdh_e) or \
         (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or \
         (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
-            if rsi_a > 50 and rsi_a < 70:
-                if (rsi_a - rsi_b) > 1:
+            if rsi_a > 50 and rsi_a < 70 and (rsi_a - rsi_b) > 1:
+                if upward[len_ward-1] > 0:
                     Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
         if (macdh_a < 0 and macdh_b > 0 and macd_b < macdh_c) or \
@@ -323,11 +364,36 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
         (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or \
         (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or \
         (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
-            if rsi_a > 30 and rsi_a < 50:
-                if (rsi_b - rsi_a) > 1:
+            if rsi_a > 30 and rsi_a < 50 and (rsi_b - rsi_a) > 1:
+                if downward[len_ward-1] > 0:
                     Signal = "Sell_Signal"
 
     return Signal
+
+def ExpMovingAverage(values, window):
+    weights = np.exp(np.linspace(1., 0., window))
+    weights /= weights.sum()
+    a = np.convolve(values, weights, mode='full')[:len(values)]
+    a[:window] = a[window]
+    return a
+
+def RangeFilter(x, r):
+    nz_rng = [0]
+
+    index = 0
+    while index < len(x):
+        len_rng = len(nz_rng)
+        if x[index] > nz_rng[len_rng - 1]:
+            if (x[index] - r[index]) < nz_rng[len_rng - 1]:
+                nz_rng.append(nz_rng[len_rng - 1])
+            else:
+                nz_rng.append(x[index] - r[index])
+        elif (x[index] + r[index] > nz_rng[len_rng - 1]):
+            nz_rng.append(nz_rng[len_rng - 1])
+        else:
+            nz_rng.append(x[index] + r[index])
+        index += 1
+    return nz_rng
 
 if __name__ == "__main__":
     print("\n""####### Run Back Test #####")

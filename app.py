@@ -4,7 +4,7 @@ import time
 import moment
 import pprint36 as pprint
 import settings as ENV
-from services.signal import detect_signal_sign, find_signal_ema_sign, find_signal_macd_4c_sign
+from services.signal import detect_signal_sign, find_signal_macd_4c_sign
 from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
 from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol, adjust_trailing_stop_position 
 from services.request import push_notify_message
@@ -115,15 +115,18 @@ def run_ordinary_future_task():
     print("\n""####### Positions Stop Loss #####")
     positions = get_positions_list(exchange, 'USDT')
     for position in positions:
-        detect_signal = detect_signal_sign(exchange, position.get('symbol'), timeframe, limit)
-        if position.get('side') == "long" and detect_signal == "SELL_POSITION":
-            print("Stop-Loss-Position-Long", position.get('symbol'))
-            exchange.create_order(position.get('symbol'), 'market', 'sell', float(position.get('contracts')))
-        elif position.get('side') == "short" and detect_signal == "BUY_POSITION":
-            print("Stop-Loss-Position-Short", position.get('symbol'))
-            exchange.create_order(position.get('symbol'), 'market', 'buy', float(position.get('contracts')))
-        else:
-            print("HOLD-Position", position.get('symbol'))
+        try:
+            detect_signal = detect_signal_sign(exchange, position.get('symbol'), timeframe, limit)
+            if position.get('side') == "long" and detect_signal == "SELL_POSITION":
+                print("Stop-Loss-Position-Long", position.get('symbol'))
+                exchange.create_order(position.get('symbol'), 'market', 'sell', float(position.get('contracts')))
+            elif position.get('side') == "short" and detect_signal == "BUY_POSITION":
+                print("Stop-Loss-Position-Short", position.get('symbol'))
+                exchange.create_order(position.get('symbol'), 'market', 'buy', float(position.get('contracts')))
+            else:
+                print("HOLD-Position", position.get('symbol'))
+        except:
+            print("ERROR POSITIONS STOP LOSS FUNCTION")
 
     cancel_unused_order(exchange, positions, 'future', 'USDT')
     print("##########################")
@@ -149,9 +152,6 @@ def run_ordinary_future_task():
         print("Symbol", market.get('symbol'))
         Signal = find_signal_macd_4c_sign(exchange, market.get('symbol'), timeframe, limit)
         message = None
-
-        if Signal == "Non-Signal":
-            Signal = find_signal_ema_sign(exchange, market.get('symbol'), timeframe, limit)
 
         if Signal  == "Buy_Signal":
             print("BUY-Trade")

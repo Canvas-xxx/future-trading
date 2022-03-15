@@ -6,3 +6,4 @@ moment
 python-dotenv
 APScheduler==3.6.3
 requests
+numpy

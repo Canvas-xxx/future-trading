@@ -1,5 +1,6 @@
 import pandas as pd
 import pandas_ta as ta
+import numpy as np
 
 def detect_signal_sign(exchange, pair, timeframe, limit):
     Signal = "HOLD_POSITION"
@@ -56,9 +57,49 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         macdh_e = df_ohlcv['MACDh_12_26_9'][count-6]
         macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
         macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
+
+        close_list = df_ohlcv['close'][:count-1]
+        close_list_1 = [0]
+        limit = len(close_list)
+        index = 0
+        while index < (limit - 1):
+            close_list_1.append(close_list[index])
+            index += 1
+
+        per = 100
+        mult = 4
+
+        avrng = ExpMovingAverage(abs(close_list - close_list_1), per)
+        smrng = ExpMovingAverage(avrng, (per*2-1)) * mult
+        
+        filt = RangeFilter(close_list, smrng)
+
+        upward = [0]
+        downward = [0]
+        i = 0
+        back_filt = 0
+        while i < len(filt):
+            len_ward = len(upward)
+            if i > 0:
+                back_filt = filt[i-1]
+            if filt[i] > back_filt:
+                upward.append(upward[len_ward-1] + 1)
+            elif filt[i] < back_filt:
+                upward.append(0)
+            else:
+                upward.append(upward[len_ward-1])
+
+            if filt[i] < back_filt:
+                downward.append(downward[len_ward-1] + 1)
+            elif filt[i] > back_filt:
+                downward.append(0)
+            else:
+                downward.append(downward[len_ward-1])
+            i += 1 
     except:
         return Signal
 
+    len_ward = len(upward)
     if macd_a > 0 and macd_b < 0:
         print("MACD WILL UP TREND")
         if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or \
@@ -67,10 +108,10 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or \
         (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
             print("MACD HAS NEARLY CROSS UP")
-            if rsi_a > 50 and rsi_a < 70:
-                print("RSI IS IN NORMAL RANGE")
-                if (rsi_a - rsi_b) > 1:
-                    print("RSI IS UP")
+            if rsi_a > 50 and rsi_a < 70 and (rsi_a - rsi_b) > 1:
+                print("RSI CONDITION PASS")
+                if upward[len_ward-1] > 0:
+                    print("UP WARD TREND")
                     Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
         print("MACD WILL DOWN TREND")
@@ -80,10 +121,10 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
         (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or \
         (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
             print("MACD HAS NEARLY CROSS DOWN")
-            if rsi_a > 30 and rsi_a < 50:
-                print("RSI IS IN NORMAL RANGE")
-                if (rsi_b - rsi_a) > 1:
-                    print("RSI IS DOWN")
+            if rsi_a > 30 and rsi_a < 50 and (rsi_b - rsi_a) > 1:
+                print("RSI CONDITION PASS")
+                if downward[len_ward-1] > 0:
+                    print("DOWN WARD TREND")
                     Signal = "Sell_Signal"
     else:
         print("MACD ALREADY HAS TREND")
@@ -138,3 +179,28 @@ def find_signal_ema_sign(exchange, pair, timeframe, limit):
                 Signal = "Sell_Signal"
  
     return Signal
+
+def ExpMovingAverage(values, window):
+    weights = np.exp(np.linspace(1., 0., window))
+    weights /= weights.sum()
+    a = np.convolve(values, weights, mode='full')[:len(values)]
+    a[:window] = a[window]
+    return a
+
+def RangeFilter(x, r):
+    nz_rng = [0]
+
+    index = 0
+    while index < len(x):
+        len_rng = len(nz_rng)
+        if x[index] > nz_rng[len_rng - 1]:
+            if (x[index] - r[index]) < nz_rng[len_rng - 1]:
+                nz_rng.append(nz_rng[len_rng - 1])
+            else:
+                nz_rng.append(x[index] - r[index])
+        elif (x[index] + r[index] > nz_rng[len_rng - 1]):
+            nz_rng.append(nz_rng[len_rng - 1])
+        else:
+            nz_rng.append(x[index] + r[index])
+        index += 1
+    return nz_rng
