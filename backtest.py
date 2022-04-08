@@ -17,6 +17,7 @@ SL_PERCENTAGE = ENV.SL_PERCENTAGE
 TP_PERCENTAGE = ENV.TP_PERCENTAGE
 LEVERAGE = ENV.LEVERAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
+LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
 
 exchange = ccxt.binanceusdm({
     'apiKey': API_KEY, 
@@ -29,7 +30,7 @@ exchange = ccxt.binanceusdm({
 
 def schedule_backtest():
     markets = get_market_list(exchange, 'future', 'USDT')
-    markets = markets[0:30]
+    markets = markets[0:LIMIT_SYMBOLS]
 
     summary_total = 0
     summary_success = 0

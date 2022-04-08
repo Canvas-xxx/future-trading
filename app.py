@@ -24,6 +24,7 @@ REBALANCING_COIN = ENV.REBALANCING_COIN
 REBALANCING_FAIT_COIN = ENV.REBALANCING_FAIT_COIN
 REBALANCING_PERCENTAGE = ENV.REBALANCING_PERCENTAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
+LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
 
 exchange = ccxt.binanceusdm({
     'apiKey': API_KEY, 
@@ -94,7 +95,6 @@ def run_ordinary_future_task():
     print("TIMEFRAME", timeframe)
     print("CANDLE_LIMIT", limit)
     print("LEVERAGE", leverage)
-    print("RISK_OF_RUIN", risk_of_ruin)
     print("STOP LOSS PERCENTAGE", stop_loss_percentage)
     print("TAKE PROFIT PERCENTAGE", tp_percentage)
     print("######################")
@@ -107,6 +107,8 @@ def run_ordinary_future_task():
     print("\n""##########################")
     try:
         position_size = FUTURE_POSITION_SIZE
+        if FUTURE_POSITION_SIZE == 0:
+            position_size = get_position_size(balance, risk_of_ruin, stop_loss_percentage, leverage)
     except:
         position_size = get_position_size(balance, risk_of_ruin, stop_loss_percentage, leverage)
     print("Position Size", position_size)
@@ -146,7 +148,7 @@ def run_ordinary_future_task():
         print("---------------------------------")
         set_pair_leverage(exchange, market.get('symbol'), leverage)
 
-        if index > 30:
+        if index > LIMIT_SYMBOLS:
             return
 
         print("Symbol", market.get('symbol'))
