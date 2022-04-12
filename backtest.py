@@ -18,6 +18,7 @@ TP_PERCENTAGE = ENV.TP_PERCENTAGE
 LEVERAGE = ENV.LEVERAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
 LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
+FIXIE_URL = ENV.FIXIE_URL
 
 exchange = ccxt.binanceusdm({
     'apiKey': API_KEY, 
@@ -25,6 +26,10 @@ exchange = ccxt.binanceusdm({
     'enableRateLimit': True,
     'options': {
         'defaultType': 'future'
+    },
+    'proxies': {
+        'http': FIXIE_URL,
+        'https': FIXIE_URL
     }
 })
 
@@ -338,6 +343,7 @@ if __name__ == "__main__":
     print("\n""####### Run Back Test #####")
 
     try:
-        schedule_backtest()
+        backtest_symbol('BTC/USDT')
+        # schedule_backtest()
     except (KeyboardInterrupt, SystemExit):
         pass

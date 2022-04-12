@@ -25,6 +25,7 @@ REBALANCING_FAIT_COIN = ENV.REBALANCING_FAIT_COIN
 REBALANCING_PERCENTAGE = ENV.REBALANCING_PERCENTAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
 LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
+FIXIE_URL = ENV.FIXIE_URL
 
 exchange = ccxt.binanceusdm({
     'apiKey': API_KEY, 
@@ -32,6 +33,10 @@ exchange = ccxt.binanceusdm({
     'enableRateLimit': True,
     'options': {
         'defaultType': 'future'
+    },
+    'proxies': {
+        'http': FIXIE_URL,
+        'https': FIXIE_URL
     }
 })
 
@@ -39,6 +44,10 @@ exchange_spot = ccxt.binance({
     'apiKey': API_KEY, 
     'secret': SECRET_KEY,
     'enableRateLimit': True,
+    'proxies': {
+        'http': FIXIE_URL,
+        'https': FIXIE_URL
+    }
 })
 
 def cancle_close_positions():
@@ -238,16 +247,16 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Backtest Futures Signal
-    scheduler.add_job(schedule_backtest, 'cron', day='*/1', hour='0', minute='10', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
+    # scheduler.add_job(schedule_backtest, 'cron', day='*/1', hour='0', minute='10', second='0', timezone="Africa/Abidjan")
+    # scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
     # scheduler.add_job(trailing_stop_positions, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(cancle_close_positions, 'cron', minute='*/15', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(cancle_close_positions, 'cron', hour='*/1', minute='0', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
-    scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
+    # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
 
     try:
         scheduler.start()
