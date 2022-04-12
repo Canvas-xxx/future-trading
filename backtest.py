@@ -343,7 +343,6 @@ if __name__ == "__main__":
     print("\n""####### Run Back Test #####")
 
     try:
-        backtest_symbol('BTC/USDT')
-        # schedule_backtest()
+        schedule_backtest()
     except (KeyboardInterrupt, SystemExit):
         pass
