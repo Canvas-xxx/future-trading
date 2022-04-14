@@ -8,6 +8,8 @@ load_dotenv(dotenv_path)
 
 API_KEY = str(getenv("API_KEY"))
 SECRET_KEY = str(getenv("SECRET_KEY"))
+API_READING_KEY = str(getenv("API_READING_KEY"))
+SECRET_READING_KEY = str(getenv("SECRET_READING_KEY"))
 TF_DURATION=str(getenv("TF_DURATION"))
 TF_UNIT=str(getenv("TF_UNIT"))
 CANDLE_LIMIT=int(getenv("CANDLE_LIMIT"))

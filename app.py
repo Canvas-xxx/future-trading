@@ -1,17 +1,21 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 import ccxt
+from binance.futures import Futures as Client
 import time
 import moment
 import pprint36 as pprint
+import re
 import settings as ENV
 from services.signal import detect_signal_sign, find_signal_macd_4c_sign
 from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
-from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol, adjust_trailing_stop_position 
+from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol 
 from services.request import push_notify_message
 from backtest import schedule_backtest, position_backtest_symbol 
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
+API_READING_KEY = ENV.API_READING_KEY
+SECRET_READING_KEY = ENV.SECRET_READING_KEY
 TF_DURATION = ENV.TF_DURATION
 TF_UNIT = ENV.TF_UNIT
 CANDLE_LIMIT = ENV.CANDLE_LIMIT
@@ -28,35 +32,25 @@ LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
 FIXIE_URL = ENV.FIXIE_URL
 
 exchange = ccxt.binanceusdm({
-    'apiKey': API_KEY, 
-    'secret': SECRET_KEY,
+    'apiKey': API_READING_KEY, 
+    'secret': SECRET_READING_KEY,
     'enableRateLimit': True,
     'options': {
         'defaultType': 'future'
-    },
-    'proxies': {
-        'http': FIXIE_URL,
-        'https': FIXIE_URL
     }
 })
 
 exchange_spot = ccxt.binance({
-    'apiKey': API_KEY, 
-    'secret': SECRET_KEY,
-    'enableRateLimit': True,
-    'proxies': {
-        'http': FIXIE_URL,
-        'https': FIXIE_URL
-    }
+    'apiKey': API_READING_KEY, 
+    'secret': SECRET_READING_KEY,
+    'enableRateLimit': True
 })
+
+client = Client(API_KEY, SECRET_KEY, base_url="https://fapi.binance.com", proxies= {'http': FIXIE_URL, 'https': FIXIE_URL})
 
 def cancle_close_positions():
     positions = get_positions_list(exchange, 'USDT')
-    cancel_unused_order(exchange, positions, 'future', 'USDT')
-
-def trailing_stop_positions():
-    positions = get_positions_list(exchange, 'USDT')
-    adjust_trailing_stop_position(exchange, positions, SL_PERCENTAGE)
+    cancel_unused_order(exchange, client, positions, 'future', 'USDT')
 
 def backtest_current_positions():
     positions = get_positions_list(exchange, 'USDT')
@@ -130,16 +124,16 @@ def run_ordinary_future_task():
             detect_signal = detect_signal_sign(exchange, position.get('symbol'), timeframe, limit)
             if position.get('side') == "long" and detect_signal == "SELL_POSITION":
                 print("Stop-Loss-Position-Long", position.get('symbol'))
-                exchange.create_order(position.get('symbol'), 'market', 'sell', float(position.get('contracts')))
+                client.new_order_test(symbol=re.sub('/', '', position.get('symbol')), side="SELL", type="MARKET", quantity=position.get('contracts'))
             elif position.get('side') == "short" and detect_signal == "BUY_POSITION":
                 print("Stop-Loss-Position-Short", position.get('symbol'))
-                exchange.create_order(position.get('symbol'), 'market', 'buy', float(position.get('contracts')))
+                client.new_order_test(symbol=re.sub('/', '', position.get('symbol')), side="BUY", type="MARKET", quantity=position.get('contracts'))
             else:
                 print("HOLD-Position", position.get('symbol'))
         except:
             print("ERROR POSITIONS STOP LOSS FUNCTION")
 
-    cancel_unused_order(exchange, positions, 'future', 'USDT')
+    cancel_unused_order(exchange, client, positions, 'future', 'USDT')
     print("##########################")
 
     print("\n""####### Current Positions List #####")
@@ -155,7 +149,7 @@ def run_ordinary_future_task():
     index = 1
     for market in none_position_market:
         print("---------------------------------")
-        set_pair_leverage(exchange, market.get('symbol'), leverage)
+        set_pair_leverage(client, market.get('symbol'), leverage)
 
         if index > LIMIT_SYMBOLS:
             return
@@ -166,11 +160,11 @@ def run_ordinary_future_task():
 
         if Signal  == "Buy_Signal":
             print("BUY-Trade")
-            message = create_stop_loss_order(exchange, market.get('symbol'), 'buy', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
+            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get('precision'), 'BUY', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
           
         elif Signal  == "Sell_Signal":
             print("SELL-Trade")
-            message = create_stop_loss_order(exchange, market.get('symbol'), 'sell', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
+            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get('precision'), 'SELL', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
     
         else:
             print("Non-Trade")
@@ -248,10 +242,9 @@ if __name__ == "__main__":
 
     # Backtest Futures Signal
     scheduler.add_job(schedule_backtest, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(backtest_current_positions, 'cron', hour='*/' + str(duration), minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='5', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
-    # scheduler.add_job(trailing_stop_positions, 'cron', minute='*/5', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(cancle_close_positions, 'cron', hour='*/1', minute='0', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 

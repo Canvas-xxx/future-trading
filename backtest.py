@@ -8,8 +8,8 @@ from services.markets import get_market_list
 from services.request import push_notify_message
 from services.signal import range_filter_signal
 
-API_KEY = ENV.API_KEY
-SECRET_KEY = ENV.SECRET_KEY
+API_READING_KEY = ENV.API_READING_KEY
+SECRET_READING_KEY = ENV.SECRET_READING_KEY
 TF_DURATION = ENV.TF_DURATION
 TF_UNIT = ENV.TF_UNIT
 BACK_TEST_LIMIT = ENV.BACK_TEST_LIMIT
@@ -18,18 +18,13 @@ TP_PERCENTAGE = ENV.TP_PERCENTAGE
 LEVERAGE = ENV.LEVERAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
 LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
-FIXIE_URL = ENV.FIXIE_URL
 
 exchange = ccxt.binanceusdm({
-    'apiKey': API_KEY, 
-    'secret': SECRET_KEY,
+    'apiKey': API_READING_KEY, 
+    'secret': SECRET_READING_KEY,
     'enableRateLimit': True,
     'options': {
         'defaultType': 'future'
-    },
-    'proxies': {
-        'http': FIXIE_URL,
-        'https': FIXIE_URL
     }
 })
 

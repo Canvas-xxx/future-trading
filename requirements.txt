@@ -5,5 +5,5 @@ pprint36
 moment
 python-dotenv
 APScheduler==3.6.3
-requests
 numpy
+binance-futures-connector

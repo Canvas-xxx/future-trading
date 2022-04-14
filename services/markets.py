@@ -2,6 +2,7 @@ import pandas as pd
 import pandas_ta as ta
 import pprint36 as pprint
 import math
+import re
 
 def get_market_list(exchange, type, quote_asset):
     markets = exchange.fetch_markets()
@@ -20,7 +21,7 @@ def get_market_list(exchange, type, quote_asset):
     else:
         available_expiry_markets = list(filter(lambda market: market.get('expiry') == None, markets))
 
-    df_markets = pd.DataFrame(available_expiry_markets, columns=["symbol"])
+    df_markets = pd.DataFrame(available_expiry_markets, columns=["symbol", "precision"])
     raws_tickers = exchange.fetch_tickers() 
     tickers = []
 
@@ -37,15 +38,18 @@ def get_market_list(exchange, type, quote_asset):
     
     return sorted_markets.to_dict('records')
 
-def set_pair_leverage(exchange, pair, leverage):
-    exchange.set_leverage(leverage, pair)
+def set_pair_leverage(binance, pair, leverage):
+    try:
+        binance.change_leverage(symbol=re.sub('/', '', pair), leverage = leverage)
+    except Exception as e:
+        print(e)
 
 def get_amount_from_quote(exchange, symbol, position_size):
     ticker = exchange.fetch_ticker(symbol)
     price = ticker.get('close')
     return position_size / price
 
-def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp, leverage):
+def create_stop_loss_order(exchange, binance, symbol, precision, side, position_size, stop_loss, tp, leverage):
     print("\n""####### Create Order ########")
     print("Symbol", symbol)
     print("Side", side)
@@ -60,53 +64,58 @@ def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp,
     print("Leverage Position Size", leverage_position_size)
 
     quote_amount = get_amount_from_quote(exchange, symbol, leverage_position_size)
+    quote_amount = float(round(quote_amount, precision['amount']))
     print("Quota Amount", quote_amount, "Coin")
 
     try:
-        order = exchange.create_order(symbol, 'market', side, quote_amount)
+        order = binance.new_order_test(symbol=re.sub('/', '', symbol), side = side, type= "MARKET", quantity= quote_amount, newOrderRespType="RESULT")
         order_price = order['price']
 
-        if order_price is None:
-            order_price = order['average']
-        if order_price is None:
+        if order_price is not None:
+            order_price = float(order_price)
+
+        if order_price is None or order_price == 0:
+            order_price = float(order['avgPrice'])
+        if order_price is None or order_price == 0:
             cumulative_quote = float(order['info']['cumQuote'])
             executed_quantity = float(order['info']['executedQty'])
-            order_price = cumulative_quote / executed_quantity
+            order_price = float(cumulative_quote / executed_quantity)
 
-        print("Entry Price", order['price'])
-        notify_message += "\n""Entry Price " + str(order['price'])
+        print("Entry Price", order_price)
+        notify_message += "\n""Entry Price " + str(order_price)
     except:
         print("Balance insufficient")
-        notify_message += "Balance insufficient"
+        notify_message += "\n""Balance insufficient"
         return notify_message
     
     try:
         stop_loss_percentage = 0
         tp_percentage = 0
 
-        if side == "buy":
+        if side == "BUY":
             stop_loss_percentage = 1 - (stop_loss / 100)
             tp_percentage = 1 + (tp / 100)
-            tp_sl_side = "sell"
+            tp_sl_side = "SELL"
         else:
             stop_loss_percentage = 1 + (stop_loss / 100)
             tp_percentage = 1 - (tp / 100)
-            tp_sl_side = "buy"
-        stop_loss_params = {'stopPrice': order_price * stop_loss_percentage} 
-        stop_order = exchange.create_order(symbol, 'stop_market', tp_sl_side, quote_amount, None, stop_loss_params)
+            tp_sl_side = "BUY"
 
-        print("Stop Loss Price", stop_order['stopPrice'])
-        notify_message += "\n""Stop Loss Price " + str(stop_order['stopPrice'])
+        stop_price = round((order_price * stop_loss_percentage), precision['price']) 
+        binance.new_order_test(symbol=re.sub('/', '', symbol), side=tp_sl_side, type= "STOP_MARKET", quantity= quote_amount, stopPrice=stop_price)
+
+        print("Stop Loss Price", stop_price)
+        notify_message += "\n""Stop Loss Price " + str(stop_price)
     except:
         print("Stop Loss Error")
         notify_message += "\n""Stop Loss Error"
 
     try:
-        tp_params = {'stopPrice': order_price * tp_percentage}
-        tp_order = exchange.create_order(symbol, 'take_profit_market', tp_sl_side, quote_amount, None, tp_params)
+        tp_price = round((order_price * tp_percentage), precision['price']) 
+        binance.new_order_test(symbol=re.sub('/', '', symbol), side=tp_sl_side, type= "TAKE_PROFIT_MARKET", quantity= quote_amount, stopPrice=tp_price)
 
-        print("Take Profit Price", tp_order['stopPrice'])
-        notify_message += "\n""Take Profit Price " + str(tp_order['stopPrice'])
+        print("Take Profit Price", tp_price)
+        notify_message += "\n""Take Profit Price " + str(tp_price)
     except:
         print("Take Profit Error")
         notify_message += "\n""Take Profit Error"
@@ -115,7 +124,7 @@ def create_stop_loss_order(exchange, symbol, side, position_size, stop_loss, tp,
     notify_message += "\n""#####################"
     return notify_message
     
-def cancel_unused_order(exchange, positions, type, quote_asset):
+def cancel_unused_order(exchange, binance, positions, type, quote_asset):
     print("\n""####### Cancel Orders #####")
 
     markets = get_market_list(exchange, type, quote_asset)
@@ -128,7 +137,7 @@ def cancel_unused_order(exchange, positions, type, quote_asset):
         for order in orders:
             if order.get('type') == 'take_profit_market' or order.get('type') == 'stop_market':
                 try:
-                    exchange.cancel_order(order.get('id'), order.get('symbol'))
+                    binance.cancel_order(symbol= re.sub('/', '', order.get('symbol')), orderId=order.get('id'))
                     print("Cancel", sym)
                 except:
                     print(sym, "Missing Order Number")
@@ -138,62 +147,3 @@ def get_average_price_by_symbol(exchange, symbol):
     ticker = exchange.fetch_ticker(symbol)
     average_price = (ticker.get('ask') + ticker.get('bid')) / 2
     return average_price
-
-def adjust_trailing_stop_position(exchange, positions, stop_loss_percentage):
-    print("\n""####### Adjust Stop Positions #####")
-    for position in positions:
-        symbol = position.get('symbol')
-        real_percentage = position.get('percentage') / int(position.get('info').get('leverage'))
-        real_percentage_diff = real_percentage - stop_loss_percentage
-        if real_percentage_diff > stop_loss_percentage:
-            position_amount = position.get('info').get('positionAmt')
-            orders = exchange.fetch_orders(symbol)
-            multiple_profit = math.floor(real_percentage_diff / stop_loss_percentage)
-            print("Multiple Profit Percentage", multiple_profit)
-
-            if len(orders) > 0:
-                stop_loss_orders = list(filter(lambda order: order.get('type') == 'stop_market', orders)) 
-                if len(stop_loss_orders) > 0:
-                    sl_percentage = 1
-                    entry_price = position.get('entryPrice')
-                    if position.get('side') == 'long' or position.get('side') == 'buy':
-                        side = 'buy'
-                        sl_side = 'sell'
-                        if multiple_profit >= 1:
-                            sl_percentage = 1 + (((stop_loss_percentage / 2) * multiple_profit) / 100)
-                    else:
-                        side = 'sell'
-                        sl_side = 'buy'
-                        if multiple_profit >= 1:
-                            sl_percentage = 1 - (((stop_loss_percentage / 2) * multiple_profit) / 100)
-
-                    max_value_stop_loss = entry_price * sl_percentage
-
-                    for stop_loss_order in stop_loss_orders:
-                        try:
-                            exchange.cancel_order(stop_loss_order.get('id'), stop_loss_order.get('symbol'))
-                            stop_price = stop_loss_order.get('stopPrice')
-                        except:
-                            stop_price = None
-                            print(symbol, "Missing Order Number")
-
-                        if stop_price is not None:
-                            if side == 'buy':
-                                if max_value_stop_loss < stop_price:
-                                    max_value_stop_loss = stop_price
-                            else:
-                                if max_value_stop_loss > stop_price:
-                                    max_value_stop_loss = stop_price
-
-                    stop_loss_params = {'stopPrice': max_value_stop_loss} 
-                    try:
-                        stop_order = exchange.create_order(symbol, 'stop_market', sl_side, position_amount, None, stop_loss_params)
-                        print(symbol, "Update Stop Price To", stop_order['stopPrice'], "Current Profit Percentage", real_percentage, "%")
-                    except:
-                        print(symbol, "Cant Create Stop Loss order")
-            else:
-                print(symbol, "No Positions")
-        else:
-            print(symbol, "Not Profit Positions")
-
-    print("##########################")
