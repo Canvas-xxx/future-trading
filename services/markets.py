@@ -68,7 +68,7 @@ def create_stop_loss_order(exchange, binance, symbol, precision, side, position_
     print("Quota Amount", quote_amount, "Coin")
 
     try:
-        order = binance.new_order_test(symbol=re.sub('/', '', symbol), side = side, type= "MARKET", quantity= quote_amount, newOrderRespType="RESULT")
+        order = binance.new_order(symbol=re.sub('/', '', symbol), side = side, type= "MARKET", quantity= quote_amount, newOrderRespType="RESULT")
         order_price = order['price']
 
         if order_price is not None:
@@ -102,7 +102,7 @@ def create_stop_loss_order(exchange, binance, symbol, precision, side, position_
             tp_sl_side = "BUY"
 
         stop_price = round((order_price * stop_loss_percentage), precision['price']) 
-        binance.new_order_test(symbol=re.sub('/', '', symbol), side=tp_sl_side, type= "STOP_MARKET", quantity= quote_amount, stopPrice=stop_price)
+        binance.new_order(symbol=re.sub('/', '', symbol), side=tp_sl_side, type= "STOP_MARKET", quantity= quote_amount, stopPrice=stop_price)
 
         print("Stop Loss Price", stop_price)
         notify_message += "\n""Stop Loss Price " + str(stop_price)
@@ -112,7 +112,7 @@ def create_stop_loss_order(exchange, binance, symbol, precision, side, position_
 
     try:
         tp_price = round((order_price * tp_percentage), precision['price']) 
-        binance.new_order_test(symbol=re.sub('/', '', symbol), side=tp_sl_side, type= "TAKE_PROFIT_MARKET", quantity= quote_amount, stopPrice=tp_price)
+        binance.new_order(symbol=re.sub('/', '', symbol), side=tp_sl_side, type= "TAKE_PROFIT_MARKET", quantity= quote_amount, stopPrice=tp_price)
 
         print("Take Profit Price", tp_price)
         notify_message += "\n""Take Profit Price " + str(tp_price)
