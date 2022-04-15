@@ -154,7 +154,8 @@ def run_ordinary_future_task():
         if index > LIMIT_SYMBOLS:
             return
 
-        print("Symbol", market.get('symbol'))
+        no_ = index + 1
+        print("Symbol", no_, market.get('symbol'))
         Signal = find_signal_macd_4c_sign(exchange, market.get('symbol'), timeframe, limit)
         message = None
 
