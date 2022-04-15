@@ -133,14 +133,17 @@ def cancel_unused_order(exchange, binance, positions, type, quote_asset):
     markets_symbol = list(map(lambda market: market.get('symbol'), markets))
     exclude_symbol = list(filter(lambda sym: sym not in positions_symbol, markets_symbol))
     for sym in exclude_symbol:
-        orders = exchange.fetch_orders(sym)
-        for order in orders:
-            if order.get('type') == 'take_profit_market' or order.get('type') == 'stop_market':
-                try:
-                    binance.cancel_order(symbol= re.sub('/', '', order.get('symbol')), orderId=order.get('id'))
-                    print("Cancel", sym)
-                except:
-                    print(sym, "Missing Order Number")
+        try:
+            orders = exchange.fetch_orders(sym)
+            for order in orders:
+                if order.get('type') == 'take_profit_market' or order.get('type') == 'stop_market':
+                    try:
+                        binance.cancel_order(symbol= re.sub('/', '', order.get('symbol')), orderId=order.get('id'))
+                        print("Cancel", sym)
+                    except:
+                        print(sym, "Missing Order Number")
+        except Exception as e:
+            print(e)
     print("##########################")
 
 def get_average_price_by_symbol(exchange, symbol):
