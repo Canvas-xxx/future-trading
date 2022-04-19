@@ -323,7 +323,7 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
                 if upward[len_ward-1] > 0:
                     Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
-        if (macdh_a < 0 and macdh_b > 0 and macd_b < macdh_c) or \
+        if (macdh_a < 0 and macdh_b > 0 and macdh_b < macdh_c) or \
         (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or \
         (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or \
         (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or \

@@ -41,6 +41,7 @@ def get_market_list(exchange, type, quote_asset):
 def set_pair_leverage(binance, pair, leverage):
     try:
         binance.change_leverage(symbol=re.sub('/', '', pair), leverage = leverage)
+        binance.change_margin_type(symbol=re.sub('/', '', pair), marginType="ISOLATED")
     except Exception as e:
         print(e)
 

@@ -78,7 +78,7 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
                     Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
         print("MACD WILL DOWN TREND")
-        if (macdh_a < 0 and macdh_b > 0 and macd_b < macdh_c) or \
+        if (macdh_a < 0 and macdh_b > 0 and macdh_b < macdh_c) or \
         (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or \
         (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or \
         (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or \
