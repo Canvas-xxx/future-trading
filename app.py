@@ -100,14 +100,11 @@ def run_ordinary_future_task():
     print("LEVERAGE", leverage)
     print("STOP LOSS PERCENTAGE", stop_loss_percentage)
     print("TAKE PROFIT PERCENTAGE", tp_percentage)
-    print("######################")
 
     print("\n""######################")
     balance = get_usdt_balance_in_future_wallet(exchange) 
     print("Balance", balance)
-    print("######################")
 
-    print("\n""##########################")
     try:
         position_size = FUTURE_POSITION_SIZE
         if FUTURE_POSITION_SIZE == 0:
@@ -115,26 +112,8 @@ def run_ordinary_future_task():
     except:
         position_size = get_position_size(balance, risk_of_ruin, stop_loss_percentage, leverage)
     print("Position Size", position_size)
-    print("##########################")
 
-    print("\n""####### Positions Stop Loss #####")
-    positions = get_positions_list(exchange, 'USDT')
-    for position in positions:
-        try:
-            detect_signal = detect_signal_sign(exchange, position.get('symbol'), timeframe, limit)
-            if position.get('side') == "long" and detect_signal == "SELL_POSITION":
-                print("Stop-Loss-Position-Long", position.get('symbol'))
-                client.new_order_test(symbol=re.sub('/', '', position.get('symbol')), side="SELL", type="MARKET", quantity=position.get('contracts'))
-            elif position.get('side') == "short" and detect_signal == "BUY_POSITION":
-                print("Stop-Loss-Position-Short", position.get('symbol'))
-                client.new_order_test(symbol=re.sub('/', '', position.get('symbol')), side="BUY", type="MARKET", quantity=position.get('contracts'))
-            else:
-                print("HOLD-Position", position.get('symbol'))
-        except:
-            print("ERROR POSITIONS STOP LOSS FUNCTION")
-
-    cancel_unused_order(exchange, client, positions, 'future', 'USDT')
-    print("##########################")
+    print("\n""##########################")
 
     print("\n""####### Current Positions List #####")
     positions = get_positions_list(exchange, 'USDT')
