@@ -7,4 +7,5 @@ python-dotenv
 APScheduler==3.6.3
 numpy
 binance-futures-connector
-pymongo
+dnspython
+pymongo[tls,srv]==3.8.0
