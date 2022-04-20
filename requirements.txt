@@ -7,3 +7,4 @@ python-dotenv
 APScheduler==3.6.3
 numpy
 binance-futures-connector
+pymongo

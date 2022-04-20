@@ -4,7 +4,8 @@ import pandas as pd
 import pandas_ta as ta
 import moment
 import math
-from services.markets import get_market_list
+import pymongo
+# from services.markets import get_market_list
 from services.request import push_notify_message
 from services.signal import range_filter_signal
 
@@ -17,7 +18,8 @@ SL_PERCENTAGE = ENV.SL_PERCENTAGE
 TP_PERCENTAGE = ENV.TP_PERCENTAGE
 LEVERAGE = ENV.LEVERAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
-LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
+# LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
+DATABASE_URL = ENV.DATABASE_URL
 
 exchange = ccxt.binanceusdm({
     'apiKey': API_READING_KEY, 
@@ -28,9 +30,14 @@ exchange = ccxt.binanceusdm({
     }
 })
 
+client = pymongo.MongoClient(DATABASE_URL)
+symbol_backtest_stat = client.binance.symbol_backtest_stat
+
 def schedule_backtest():
-    markets = get_market_list(exchange, 'future', 'USDT')
-    markets = markets[0:LIMIT_SYMBOLS]
+    db_markets = symbol_backtest_stat.find()
+    markets = list(db_markets)
+    # markets = get_market_list(exchange, 'future', 'USDT')
+    # markets = markets[0:LIMIT_SYMBOLS]
 
     summary_total = 0
     summary_success = 0
@@ -45,7 +52,7 @@ def schedule_backtest():
     avg_all_symbol_close_candle = 0
 
     for market in markets:
-        total, success, fail, orders_inform_list, avg_close_candle = backtest_symbol(market.get('symbol'))
+        total, success, fail, orders_inform_list, avg_close_candle = backtest_symbol(market.get('symbol'), BACK_TEST_LIMIT)
         summary_total += total
         summary_success += success
         summary_fail += fail
@@ -110,7 +117,7 @@ def schedule_backtest():
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
 def position_backtest_symbol(symbol):
-    total, success, fail, orders_inform_list, avg_close_candle = backtest_symbol(symbol)
+    total, success, fail, orders_inform_list, avg_close_candle = backtest_symbol(symbol, BACK_TEST_LIMIT)
 
     count_success_position = 0
     count_fail_position = 0
@@ -165,9 +172,9 @@ def position_backtest_symbol(symbol):
     if notify_message != None:
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
-def backtest_symbol(symbol):
+def backtest_symbol(symbol, back_test_limit):
     timeframe = TF_DURATION + TF_UNIT
-    limit = BACK_TEST_LIMIT
+    limit = back_test_limit 
 
     df_ohlcv = exchange.fetch_ohlcv(symbol ,timeframe=timeframe, limit=limit)
     df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
@@ -188,7 +195,7 @@ def backtest_symbol(symbol):
     position_price = 0
 
     count = len(df_ohlcv)
-    index = 50
+    index = 0
 
     print("Symbol", symbol)
     print("TP PERCENTAGE", TP_PERCENTAGE)

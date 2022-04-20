@@ -1,16 +1,18 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 import ccxt
-from binance.futures import Futures as Client
 import time
 import moment
 import pprint36 as pprint
 import re
+import pymongo
 import settings as ENV
+from binance.futures import Futures as Client
 from services.signal import detect_signal_sign, find_signal_macd_4c_sign
 from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
 from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol 
 from services.request import push_notify_message
 from backtest import schedule_backtest, position_backtest_symbol 
+from ranking import schedule_ranking
 
 API_KEY = ENV.API_KEY
 SECRET_KEY = ENV.SECRET_KEY
@@ -28,8 +30,9 @@ REBALANCING_COIN = ENV.REBALANCING_COIN
 REBALANCING_FAIT_COIN = ENV.REBALANCING_FAIT_COIN
 REBALANCING_PERCENTAGE = ENV.REBALANCING_PERCENTAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
-LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
+# LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
 FIXIE_URL = ENV.FIXIE_URL
+DATABASE_URL = ENV.DATABASE_URL
 
 exchange = ccxt.binanceusdm({
     'apiKey': API_READING_KEY, 
@@ -47,6 +50,9 @@ exchange_spot = ccxt.binance({
 })
 
 client = Client(API_KEY, SECRET_KEY, base_url="https://fapi.binance.com", proxies= {'http': FIXIE_URL, 'https': FIXIE_URL})
+
+client_db = pymongo.MongoClient(DATABASE_URL)
+symbol_backtest_stat = client_db.binance.symbol_backtest_stat
 
 def cancle_close_positions():
     positions = get_positions_list(exchange, 'USDT')
@@ -121,7 +127,9 @@ def run_ordinary_future_task():
     pprint.pprint(positions_symbol)
     print("##########################")
 
-    markets = get_market_list(exchange, 'future', 'USDT')
+    db_markets = symbol_backtest_stat.find()
+    markets = list(db_markets)
+    # markets = get_market_list(exchange, 'future', 'USDT')
     none_position_market = list(filter(lambda market: market.get('symbol') not in positions_symbol, markets))
 
     print("\n""####### Trade Status #####")
@@ -130,8 +138,8 @@ def run_ordinary_future_task():
         print("---------------------------------")
         set_pair_leverage(client, market.get('symbol'), leverage)
 
-        if index > LIMIT_SYMBOLS:
-            return
+        # if index > LIMIT_SYMBOLS:
+        #     return
 
         print("Symbol", index, market.get('symbol'))
         Signal = find_signal_macd_4c_sign(exchange, market.get('symbol'), timeframe, limit)
@@ -218,6 +226,9 @@ if __name__ == "__main__":
     print("\n""####### Run Scheduler #####")
     scheduler = BlockingScheduler()
     duration = int(TF_DURATION)
+
+    # Quater Backtest Stat Schedule
+    scheduler.add_job(schedule_ranking, 'cron', hour='23', minute='0', second='0', timezone="Africa/Abidjan")
 
     # Backtest Futures Signal
     scheduler.add_job(schedule_backtest, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
