@@ -228,7 +228,7 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Quater Backtest Stat Schedule
-    scheduler.add_job(schedule_ranking, 'cron', hour='23', minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_ranking, 'cron', day_of_week="6", hour='7', minute='10', second='0', timezone="Africa/Abidjan")
 
     # Backtest Futures Signal
     scheduler.add_job(schedule_backtest, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
