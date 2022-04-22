@@ -327,7 +327,7 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
         (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or \
         (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
             if rsi_a > 50 and rsi_a < 70 and (rsi_a - rsi_b) > 1:
-                if upward[len_ward-1] > 0:
+                if upward[len_ward-1] > 0 and upward[len_ward-1] < 10:
                     Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
         if (macdh_a < 0 and macdh_b > 0 and macdh_b < macdh_c) or \
@@ -336,7 +336,7 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
         (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or \
         (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
             if rsi_a > 30 and rsi_a < 50 and (rsi_b - rsi_a) > 1:
-                if downward[len_ward-1] > 0:
+                if downward[len_ward-1] > 0 and downward[len_ward-1] < 10:
                     Signal = "Sell_Signal"
 
     return Signal

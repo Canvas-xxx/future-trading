@@ -73,7 +73,7 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
             print("MACD HAS NEARLY CROSS UP")
             if rsi_a > 50 and rsi_a < 70 and (rsi_a - rsi_b) > 1:
                 print("RSI CONDITION PASS")
-                if upward[len_ward-1] > 0:
+                if upward[len_ward-1] > 0 and upward[len_ward-1] < 10:
                     print("UP WARD TREND")
                     Signal = "Buy_Signal"
     elif macd_a < 0 and macd_b > 0:
@@ -86,7 +86,7 @@ def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
             print("MACD HAS NEARLY CROSS DOWN")
             if rsi_a > 30 and rsi_a < 50 and (rsi_b - rsi_a) > 1:
                 print("RSI CONDITION PASS")
-                if downward[len_ward-1] > 0:
+                if downward[len_ward-1] > 0 and downward[len_ward-1] < 10:
                     print("DOWN WARD TREND")
                     Signal = "Sell_Signal"
     else:
