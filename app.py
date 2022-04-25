@@ -60,12 +60,45 @@ def cancle_close_positions():
 
 def backtest_current_positions():
     positions = get_positions_list(exchange, 'USDT')
+    notify_list = []
     for position in positions:
         try:
             symbol = position.get('symbol')
-            position_backtest_symbol(symbol)
+            total, _, _, win_rate, avg_success_candle, avg_fault_candle, avg_close_candle, current_order_position_date, current_order_position_number = position_backtest_symbol(symbol, False)
         except:
-            print("Can not backtest current position")
+            total, win_rate, avg_success_candle, avg_fault_candle, avg_close_candle, current_order_position_date, current_order_position_number = 0, 0, 0, 0, 0, None, 0
+
+        notify_list.append({
+            'symbol': position.get('symbol'),
+            'total': total,
+            'win_rate': win_rate,
+            'avg_success_candle': avg_success_candle,
+            'avg_fault_candle': avg_fault_candle,
+            'avg_close_candle': avg_close_candle,
+            'current_order_position_date': current_order_position_date,
+            'current_order_position_number': current_order_position_number
+        })
+
+    if len(notify_list) > 0:
+        notify_message = "\n""### Current Position Backtest ###"
+        notify_message += "\n""No. of Current Position " + str(len(notify_list))
+        index = 0
+        for pos in notify_list:
+            notify_message += "\n""Symbol " + str(pos.get('symbol'))
+            notify_message += "\n""Totals " + str(pos.get('total'))
+            notify_message += "\n""Win Rate " + str(round(float(pos.get('win_rate')), 2)) + "%"
+            notify_message += "\n""Avg. Success Candle " + str(pos.get('avg_success_candle'))
+            notify_message += "\n""Avg. Fault Candle " + str(pos.get('avg_fault_candle'))
+            notify_message += "\n""AVg. Close Candle " + str(pos.get('avg_close_candle'))
+            notify_message += "\n""Current Position " + str(pos.get('current_order_position_date')) + ", " + str(pos.get('current_order_position_number'))
+            notify_message += "\n""------"
+            index += 1
+            if (index % 5) == 0:
+                push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
+                notify_message = ""
+
+        if len(notify_message) > 0:
+            push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
 def future_schedule_job():
     print("############ Schedule(",moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),") ############")

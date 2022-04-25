@@ -52,7 +52,11 @@ def schedule_backtest():
     avg_all_symbol_close_candle = 0
 
     for market in markets:
-        total, success, fail, orders_inform_list, avg_close_candle = backtest_symbol(market.get('symbol'), BACK_TEST_LIMIT)
+        try:
+            total, success, fail, orders_inform_list, avg_close_candle, _, _ = backtest_symbol(market.get('symbol'), BACK_TEST_LIMIT)
+        except:
+            total, success, fail, orders_inform_list, avg_close_candle = 0, 0, 0, [], 0
+
         summary_total += total
         summary_success += success
         summary_fail += fail
@@ -116,13 +120,16 @@ def schedule_backtest():
     if notify_message != None:
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
-def position_backtest_symbol(symbol):
-    total, success, fail, orders_inform_list, avg_close_candle = backtest_symbol(symbol, BACK_TEST_LIMIT)
+def position_backtest_symbol(symbol, notify):
+    total, success, fail, orders_inform_list, avg_close_candle, current_order_position_date, current_order_position_number = backtest_symbol(symbol, BACK_TEST_LIMIT)
 
     count_success_position = 0
     count_fail_position = 0
     avg_success_candle = 0
     avg_fault_candle = 0
+
+    if current_order_position_date != None:
+        current_order_position_date = moment.utc(current_order_position_date).format("YYYY-MM-DD HH:mm:ss")
 
     notify_message = None
     if total > 0 and success> 0:
@@ -169,8 +176,10 @@ def position_backtest_symbol(symbol):
 
         notify_message += "\n""###########################"
 
-    if notify_message != None:
+    if notify_message != None and notify == True:
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
+
+    return  total, success, fail, win_rate, avg_success_candle, avg_fault_candle, avg_close_candle, current_order_position_date, current_order_position_number
 
 def backtest_symbol(symbol, back_test_limit):
     timeframe = TF_DURATION + TF_UNIT
@@ -194,6 +203,9 @@ def backtest_symbol(symbol, back_test_limit):
     signal = None
     position_price = 0
 
+    current_order_position_date = None
+    current_order_position_number = 0
+
     count = len(df_ohlcv)
     index = 0
 
@@ -208,12 +220,15 @@ def backtest_symbol(symbol, back_test_limit):
             s = find_signal_macd_4c_sign(exchange, df_ohlcv_range, symbol)
             if s == "Buy_Signal" or s == "Sell_Signal":
                 datetime = df_ohlcv['datetime'][index-1]
+                current_order_position_date = datetime
+                current_order_position_number = 0
                 position_price = df_ohlcv['open'][index-1]
                 count_candle_each_position = 0
                 signal = s
         elif signal != None:
             last_candle_high = df_ohlcv['high'][index]
             last_candle_low = df_ohlcv['low'][index]
+            current_order_position_number += 1
 
             if signal == "Buy_Signal":
                 avg_close_candle += 1
@@ -232,6 +247,8 @@ def backtest_symbol(symbol, back_test_limit):
                         "candle": count_candle_each_position,
                         "state": "F"
                     })
+                    current_order_position_date = None
+                    current_order_position_number = 0
                 elif last_candle_high >= tp_price: 
                     success_signal += 1
                     total_signal += 1
@@ -243,6 +260,8 @@ def backtest_symbol(symbol, back_test_limit):
                         "candle": count_candle_each_position,
                         "state": "S"
                     })
+                    current_order_position_date = None
+                    current_order_position_number = 0
             elif signal == "Sell_Signal":
                 avg_close_candle += 1
                 count_candle_each_position += 1
@@ -260,6 +279,8 @@ def backtest_symbol(symbol, back_test_limit):
                         "candle": count_candle_each_position,
                         "state": "F"
                     })
+                    current_order_position_date = None
+                    current_order_position_number = 0
                 elif last_candle_low <= tp_price:
                     success_signal += 1
                     total_signal += 1
@@ -271,6 +292,8 @@ def backtest_symbol(symbol, back_test_limit):
                         "candle": count_candle_each_position,
                         "state": "S"
                     })
+                    current_order_position_date = None
+                    current_order_position_number = 0
 
         index += 1
 
@@ -289,7 +312,7 @@ def backtest_symbol(symbol, back_test_limit):
         print("Win rate", "0%")
 
     print("##################################")
-    return total_signal, success_signal, fail_signal, orders_inform_list, avg_close_candle 
+    return total_signal, success_signal, fail_signal, orders_inform_list, avg_close_candle, current_order_position_date, current_order_position_number
 
 def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
     Signal = "Non-Signal"
