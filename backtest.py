@@ -298,6 +298,7 @@ def backtest_symbol(symbol, back_test_limit):
         index += 1
 
     try:
+        avg_close_candle = avg_close_candle - current_order_position_number
         avg_close_candle = math.ceil(avg_close_candle/count_has_position_symbol)
     except:
         avg_close_candle = 0

@@ -89,7 +89,7 @@ def backtest_current_positions():
             notify_message += "\n""Win Rate " + str(round(float(pos.get('win_rate')), 2)) + "%"
             notify_message += "\n""Avg. Success Candle " + str(pos.get('avg_success_candle'))
             notify_message += "\n""Avg. Fault Candle " + str(pos.get('avg_fault_candle'))
-            notify_message += "\n""AVg. Close Candle " + str(pos.get('avg_close_candle'))
+            notify_message += "\n""Avg. Close Candle " + str(pos.get('avg_close_candle'))
             notify_message += "\n""Current Position " + str(pos.get('current_order_position_date')) + ", " + str(pos.get('current_order_position_number'))
             notify_message += "\n""------"
             index += 1
