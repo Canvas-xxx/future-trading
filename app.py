@@ -81,7 +81,7 @@ def backtest_current_positions():
 
     if len(notify_list) > 0:
         notify_message = "\n""### Current Position Backtest ###"
-        notify_message += "\n""No. of Current Position " + str(len(notify_list))
+        notify_message += "\n""No. of Current Position " + str(len(positions))
         index = 0
         for pos in notify_list:
             notify_message += "\n""Symbol " + str(pos.get('symbol'))
