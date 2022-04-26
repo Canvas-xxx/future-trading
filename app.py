@@ -55,6 +55,7 @@ client_db = pymongo.MongoClient(DATABASE_URL)
 symbol_backtest_stat = client_db.binance.symbol_backtest_stat
 
 def cancle_close_positions():
+    print("############ Cancle Position Schedule(", moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"), ") ############")
     positions = get_positions_list(exchange, 'USDT')
     cancel_unused_order(exchange, client, positions, 'future', 'USDT')
 
