@@ -268,7 +268,7 @@ if __name__ == "__main__":
     scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='5', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
-    scheduler.add_job(cancle_close_positions, 'cron', minute='*/45', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(cancle_close_positions, 'cron', minute='*/40', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
