@@ -261,8 +261,6 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler()
     duration = int(TF_DURATION)
 
-    print(scheduler.get_jobs())
-
     # Quater Backtest Stat Schedule
     scheduler.add_job(schedule_ranking, 'cron', day_of_week="6", hour='7', minute='10', second='0', timezone="Africa/Abidjan")
 
@@ -276,6 +274,8 @@ if __name__ == "__main__":
 
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
+
+    print("Scheduler Jobs", scheduler.get_jobs())
 
     try:
         scheduler.start()
