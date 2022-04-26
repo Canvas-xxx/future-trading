@@ -54,7 +54,7 @@ client = Client(API_KEY, SECRET_KEY, base_url="https://fapi.binance.com", proxie
 client_db = pymongo.MongoClient(DATABASE_URL)
 symbol_backtest_stat = client_db.binance.symbol_backtest_stat
 
-def cancle_close_positions():
+def clearance_close_positions():
     print("############ Cancle Position Schedule(", moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"), ") ############")
     positions = get_positions_list(exchange, 'USDT')
     cancel_unused_order(exchange, client, positions, 'future', 'USDT')
@@ -261,6 +261,8 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler()
     duration = int(TF_DURATION)
 
+    print(scheduler.get_jobs())
+
     # Quater Backtest Stat Schedule
     scheduler.add_job(schedule_ranking, 'cron', day_of_week="6", hour='7', minute='10', second='0', timezone="Africa/Abidjan")
 
@@ -269,8 +271,8 @@ if __name__ == "__main__":
     scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='5', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
-    scheduler.add_job(cancle_close_positions, 'cron', minute='*/40', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(clearance_close_positions, 'cron', minute='*/45', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
