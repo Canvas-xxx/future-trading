@@ -270,12 +270,12 @@ if __name__ == "__main__":
 
     # Futures Trading Schedule
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(clearance_close_positions, 'cron', minute='*/45', second='0', timezone="Africa/Abidjan")
+    # scheduler.add_job(clearance_close_positions, 'cron', minute='*/45', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
 
-    print("Scheduler Jobs", scheduler.get_jobs())
+    print("Scheduler Jobs No.", len(scheduler.get_jobs()))
 
     try:
         scheduler.start()
