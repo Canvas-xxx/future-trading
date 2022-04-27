@@ -4,7 +4,7 @@ import time
 import moment
 import pprint36 as pprint
 import re
-import pymongo
+from pymongo import MongoClient 
 import settings as ENV
 from binance.futures import Futures as Client
 from services.signal import detect_signal_sign, find_signal_macd_4c_sign
@@ -51,7 +51,7 @@ exchange_spot = ccxt.binance({
 
 client = Client(API_KEY, SECRET_KEY, base_url="https://fapi.binance.com", proxies= {'http': FIXIE_URL, 'https': FIXIE_URL})
 
-client_db = pymongo.MongoClient(DATABASE_URL)
+client_db = MongoClient(DATABASE_URL)
 symbol_backtest_stat = client_db.binance.symbol_backtest_stat
 
 def clearance_close_positions():
@@ -161,7 +161,7 @@ def run_ordinary_future_task():
     pprint.pprint(positions_symbol)
     print("##########################")
 
-    db_markets = symbol_backtest_stat.find()
+    db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
     markets = list(db_markets)
     # markets = get_market_list(exchange, 'future', 'USDT')
     none_position_market = list(filter(lambda market: market.get('symbol') not in positions_symbol, markets))

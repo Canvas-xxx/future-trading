@@ -41,9 +41,13 @@ def get_market_list(exchange, type, quote_asset):
 def set_pair_leverage(binance, pair, leverage):
     try:
         binance.change_leverage(symbol=re.sub('/', '', pair), leverage = leverage)
+    except Exception as e:
+        print("Leverage Error", e)
+
+    try:
         binance.change_margin_type(symbol=re.sub('/', '', pair), marginType="ISOLATED")
     except Exception as e:
-        print(e)
+        print("Margin Type Error", e)
 
 def get_amount_from_quote(exchange, symbol, position_size):
     ticker = exchange.fetch_ticker(symbol)

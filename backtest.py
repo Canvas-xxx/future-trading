@@ -34,7 +34,7 @@ client = pymongo.MongoClient(DATABASE_URL)
 symbol_backtest_stat = client.binance.symbol_backtest_stat
 
 def schedule_backtest():
-    db_markets = symbol_backtest_stat.find()
+    db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
     markets = list(db_markets)
     # markets = get_market_list(exchange, 'future', 'USDT')
     # markets = markets[0:LIMIT_SYMBOLS]
