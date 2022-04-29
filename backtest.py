@@ -127,6 +127,7 @@ def position_backtest_symbol(symbol, notify):
     count_fail_position = 0
     avg_success_candle = 0
     avg_fault_candle = 0
+    win_rate = 0
 
     if current_order_position_date != None:
         current_order_position_date = moment.utc(current_order_position_date).format("YYYY-MM-DD HH:mm:ss")
@@ -162,10 +163,7 @@ def position_backtest_symbol(symbol, notify):
         notify_message += "\n""Avg. Fault Candle " + str(avg_fault_candle)
         notify_message += "\n""Avg. Close Position Length " + str(avg_close_candle)
 
-        try:
-            win_rate = (success / total) * 100
-        except:
-            win_rate = 0
+        win_rate = (success / total) * 100
         notify_message += "\n""Win Rate " + str(win_rate) + "%"
 
         try:
@@ -221,7 +219,7 @@ def backtest_symbol(symbol, back_test_limit):
             if s == "Buy_Signal" or s == "Sell_Signal":
                 datetime = df_ohlcv['datetime'][index-1]
                 current_order_position_date = datetime
-                current_order_position_number = 0
+                current_order_position_number = 1
                 position_price = df_ohlcv['open'][index-1]
                 count_candle_each_position = 0
                 signal = s

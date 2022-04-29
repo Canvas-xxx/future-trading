@@ -34,7 +34,7 @@ def schedule_ranking():
     ranking_list = []
 
     for market in markets:
-        total, success, fail, _, _ = backtest_symbol(market.get('symbol'), 1500)
+        total, success, fail, _, _, _, _ = backtest_symbol(market.get('symbol'), 1500)
 
         try:
             win_rate = (success / total) * 100
@@ -50,7 +50,7 @@ def schedule_ranking():
             'win_rate_percentage': win_rate
         })
 
-    filter_none_win_out_list = filter(lambda x: x['win_rate_percentage'] > 30 and x['total_win'] > 0, ranking_list)
+    filter_none_win_out_list = filter(lambda x: x['win_rate_percentage'] > 35 and x['total_position'] > 1, ranking_list)
     order_ranking_list = sorted(filter_none_win_out_list, key = lambda x: (x['win_rate_percentage'], x['total_position']), reverse=True)
 
     try:
