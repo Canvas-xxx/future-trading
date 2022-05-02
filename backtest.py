@@ -133,7 +133,7 @@ def position_backtest_symbol(symbol, notify):
         current_order_position_date = moment.utc(current_order_position_date).format("YYYY-MM-DD HH:mm:ss")
 
     notify_message = None
-    if total > 0 and success> 0:
+    if total > 0:
         notify_message = "\n""### Current Position Backtest ###"
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
@@ -218,11 +218,13 @@ def backtest_symbol(symbol, back_test_limit):
             s = find_signal_macd_4c_sign(exchange, df_ohlcv_range, symbol)
             if s == "Buy_Signal" or s == "Sell_Signal":
                 datetime = df_ohlcv['datetime'][index-1]
+                position_price = df_ohlcv['open'][index-1]
+                count_candle_each_position = 1
+                avg_close_candle += 1
+                signal = s
+
                 current_order_position_date = datetime
                 current_order_position_number = 1
-                position_price = df_ohlcv['open'][index-1]
-                count_candle_each_position = 0
-                signal = s
         elif signal != None:
             last_candle_high = df_ohlcv['high'][index]
             last_candle_low = df_ohlcv['low'][index]

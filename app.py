@@ -85,13 +85,19 @@ def backtest_current_positions():
         notify_message += "\n""No. of Current Position " + str(len(positions))
         index = 0
         for pos in notify_list:
+            locale_date = None
+            try:
+                locale_date = moment.date(pos.get('current_order_position_date')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm")
+            except Exception as e:
+                print("Error Date: ", e) 
+
             notify_message += "\n""Symbol " + str(pos.get('symbol'))
             notify_message += "\n""Totals " + str(pos.get('total'))
             notify_message += "\n""Win Rate " + str(round(float(pos.get('win_rate')), 2)) + "%"
             notify_message += "\n""Avg. Success Candle " + str(pos.get('avg_success_candle'))
             notify_message += "\n""Avg. Fault Candle " + str(pos.get('avg_fault_candle'))
             notify_message += "\n""Avg. Close Candle " + str(pos.get('avg_close_candle'))
-            notify_message += "\n""Current Position " + str(pos.get('current_order_position_date')) + ", " + str(pos.get('current_order_position_number'))
+            notify_message += "\n""Current Position " + str(locale_date) + ", " + str(pos.get('current_order_position_number'))
             notify_message += "\n""------"
             index += 1
             if (index % 5) == 0:
