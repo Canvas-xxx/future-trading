@@ -376,7 +376,7 @@ def retreive_my_trades():
         print('------------------------------------------------------------------')
         print(market.get('symbol'))
         day = 24 * 60 * 60 * 1000
-        # start_time = exchange.parse8601 ('2022-04-13T00:00:00')
+        # start_time = exchange.parse8601 ('2022-05-30T00:00:00')
         start_time = exchange.parse8601(str(moment.utcnow().subtract(day=1).zero))
         now = exchange.milliseconds ()
              
@@ -406,9 +406,14 @@ def retreive_my_trades():
             else:
                 start_time = end_time
 
+    olds_data = my_trades.aggregate([{ "$sort": {  "datetime": -1  } }]) 
+    olds_data = list(sorted(olds_data, key = lambda x: (x['time']), reverse=True)) 
+
     if len(all_trades):
         try:
             all_trades = list(sorted(all_trades, key = lambda x: (x['time']), reverse=True))
+            my_trades.drop()
+            all_trades = all_trades + olds_data
             my_trades.insert_many(all_trades)
             print("Update My Trades")
         except:
