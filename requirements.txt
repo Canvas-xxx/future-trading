@@ -6,6 +6,6 @@ moment
 python-dotenv
 APScheduler==3.6.3
 numpy
-binance-futures-connector
+binance-futures-connector==1.10.0
 dnspython
 pymongo[tls,srv]==3.8.0
