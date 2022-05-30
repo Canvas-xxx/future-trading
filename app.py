@@ -11,7 +11,7 @@ from services.signal import detect_signal_sign, find_signal_macd_4c_sign
 from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
 from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol 
 from services.request import push_notify_message
-from backtest import schedule_backtest, position_backtest_symbol 
+from backtest import schedule_backtest, position_backtest_symbol, retreive_my_trades
 from ranking import schedule_ranking
 
 API_KEY = ENV.API_KEY
@@ -277,6 +277,9 @@ if __name__ == "__main__":
     # Futures Trading Schedule
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
     scheduler.add_job(clearance_close_positions, 'cron', hour='*/1', minute='45', second='0', timezone="Africa/Abidjan")
+
+    ## Update My Trades
+    scheduler.add_job(retreive_my_trades, 'cron', day='*/1', hour='0', minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")

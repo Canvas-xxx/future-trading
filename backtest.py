@@ -2,10 +2,11 @@ import ccxt
 import settings as ENV
 import pandas as pd
 import pandas_ta as ta
+import pprint36 as pprint
 import moment
 import math
 import pymongo
-# from services.markets import get_market_list
+from services.markets import get_market_list
 from services.request import push_notify_message
 from services.signal import range_filter_signal
 
@@ -32,6 +33,7 @@ exchange = ccxt.binanceusdm({
 
 client = pymongo.MongoClient(DATABASE_URL)
 symbol_backtest_stat = client.binance.symbol_backtest_stat
+my_trades = client.binance.my_trades
 
 def schedule_backtest():
     db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
@@ -364,6 +366,53 @@ def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
                     Signal = "Sell_Signal"
 
     return Signal
+
+def retreive_my_trades():
+    markets = get_market_list(exchange, 'future', 'USDT')
+    # markets = [{'symbol': 'BTC/USDT'}]
+
+    all_trades = []
+    for market in markets:
+        print('------------------------------------------------------------------')
+        print(market.get('symbol'))
+        day = 24 * 60 * 60 * 1000
+        # start_time = exchange.parse8601 ('2022-04-13T00:00:00')
+        start_time = exchange.parse8601(str(moment.utcnow().subtract(day=1).zero))
+        now = exchange.milliseconds ()
+             
+        while start_time < now:
+        
+            print('Fetching trades from', exchange.iso8601(start_time))
+            end_time = start_time + day
+        
+            trades = exchange.fetch_my_trades (market.get('symbol'), start_time, None, {
+                'endTime': end_time,
+            })
+            if len(trades):
+                last_trade = trades[len(trades) - 1]
+                start_time = last_trade['timestamp'] + 1
+                trades = list(map(lambda x: { \
+                    'id': x.get('id'), \
+                    'order': x.get('order'), \
+                    'symbol': market.get('symbol'), \
+                    'side': x.get('info').get('side'), \
+                    'price': x.get('price'), \
+                    'commission': x.get('info').get('commission'), \
+                    'realizedPnl': x.get('info').get('realizedPnl'), \
+                    'time': int(x.get('info').get('time')), \
+                    'datetime': moment.date(x.get('info').get('time')).timezone("Asia/Bangkok").format('YYYY-MM-DD hh:mm:ss')
+                }, trades))
+                all_trades = all_trades + trades
+            else:
+                start_time = end_time
+
+    if len(all_trades):
+        try:
+            all_trades = list(sorted(all_trades, key = lambda x: (x['time']), reverse=True))
+            my_trades.insert_many(all_trades)
+            print("Update My Trades")
+        except:
+            print("Insert My Trades Error")
 
 if __name__ == "__main__":
     print("\n""####### Run Back Test #####")
