@@ -25,6 +25,7 @@ symbol_backtest_stat = client.binance.symbol_backtest_stat
 def schedule_ranking():
     markets = get_market_list(exchange, 'future', 'USDT')
     db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
+    db_markets = list(db_markets)
     markets = markets
 
     ranking_list = []
