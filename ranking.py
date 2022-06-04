@@ -1,10 +1,5 @@
 import ccxt
 import settings as ENV
-import pprint36 as pprint
-import pandas as pd
-import pandas_ta as ta
-import moment
-import math
 import pymongo
 from services.markets import get_market_list
 from services.request import push_notify_message

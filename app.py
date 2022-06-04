@@ -1,15 +1,13 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 import ccxt
-import time
 import moment
 import pprint36 as pprint
-import re
 from pymongo import MongoClient 
 import settings as ENV
 from binance.futures import Futures as Client
-from services.signal import detect_signal_sign, find_signal_macd_4c_sign
-from services.wallet_information import get_position_size, get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
-from services.markets import get_market_list, set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol 
+from services.signal import get_df_ohlcv, find_signal_macd_updown_rf_sign
+from services.wallet_information import get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
+from services.markets import set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol 
 from services.request import push_notify_message
 from backtest import schedule_backtest, position_backtest_symbol, retreive_my_trades
 from ranking import schedule_ranking
@@ -21,7 +19,6 @@ SECRET_READING_KEY = ENV.SECRET_READING_KEY
 TF_DURATION = ENV.TF_DURATION
 TF_UNIT = ENV.TF_UNIT
 CANDLE_LIMIT = ENV.CANDLE_LIMIT
-RISK_OF_RUIN = ENV.RISK_OF_RUIN
 LEVERAGE = ENV.LEVERAGE
 SL_PERCENTAGE = ENV.SL_PERCENTAGE
 TP_PERCENTAGE = ENV.TP_PERCENTAGE
@@ -30,7 +27,6 @@ REBALANCING_COIN = ENV.REBALANCING_COIN
 REBALANCING_FAIT_COIN = ENV.REBALANCING_FAIT_COIN
 REBALANCING_PERCENTAGE = ENV.REBALANCING_PERCENTAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
-# LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
 FIXIE_URL = ENV.FIXIE_URL
 DATABASE_URL = ENV.DATABASE_URL
 
@@ -137,7 +133,6 @@ def run_ordinary_future_task():
     timeframe = TF_DURATION + TF_UNIT
     limit = CANDLE_LIMIT
     leverage = LEVERAGE
-    risk_of_ruin = RISK_OF_RUIN
     stop_loss_percentage = SL_PERCENTAGE
     tp_percentage = TP_PERCENTAGE
     print("\n""######## Configuration ##########")
@@ -151,12 +146,7 @@ def run_ordinary_future_task():
     balance = get_usdt_balance_in_future_wallet(exchange) 
     print("Balance", balance)
 
-    try:
-        position_size = FUTURE_POSITION_SIZE
-        if FUTURE_POSITION_SIZE == 0:
-            position_size = get_position_size(balance, risk_of_ruin, stop_loss_percentage, leverage)
-    except:
-        position_size = get_position_size(balance, risk_of_ruin, stop_loss_percentage, leverage)
+    position_size = FUTURE_POSITION_SIZE
     print("Position Size", position_size)
 
     print("\n""##########################")
@@ -169,7 +159,6 @@ def run_ordinary_future_task():
 
     db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
     markets = list(db_markets)
-    # markets = get_market_list(exchange, 'future', 'USDT')
     none_position_market = list(filter(lambda market: market.get('symbol') not in positions_symbol, markets))
 
     print("\n""####### Trade Status #####")
@@ -178,11 +167,9 @@ def run_ordinary_future_task():
         print("---------------------------------")
         set_pair_leverage(client, market.get('symbol'), leverage)
 
-        # if index > LIMIT_SYMBOLS:
-        #     return
-
         print("Symbol", index, market.get('symbol'))
-        Signal = find_signal_macd_4c_sign(exchange, market.get('symbol'), timeframe, limit)
+        df_ohlcv = get_df_ohlcv(exchange, market.get('symbol'), timeframe, limit)
+        Signal = find_signal_macd_updown_rf_sign(df_ohlcv)
         message = None
 
         if Signal  == "Buy_Signal":

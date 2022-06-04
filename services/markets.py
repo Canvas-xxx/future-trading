@@ -1,7 +1,4 @@
 import pandas as pd
-import pandas_ta as ta
-import pprint36 as pprint
-import math
 import re
 
 def get_market_list(exchange, type, quote_asset):

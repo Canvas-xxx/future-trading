@@ -1,215 +1,137 @@
 import pandas as pd
 import pandas_ta as ta
-import numpy as np
+from services.indecator import get_supertrend, get_range_filter
+from services.strategy import st_strategy, rf_strategy, macd_cross_strategy, macdh_cross_strategy
 
-def detect_signal_sign(exchange, pair, timeframe, limit):
-    Signal = "HOLD_POSITION"
+def get_df_ohlcv(exchange, symbol, timeframe, limit):
+    df_ohlcv = exchange.fetch_ohlcv(symbol,timeframe=timeframe, limit=limit)
+    df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
+    df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
 
-    try:
-        df_ohlcv = exchange.fetch_ohlcv(pair ,timeframe=timeframe, limit=limit)
-        df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
-        df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
+    if len(df_ohlcv) <= 200:
+        return pd.Series([])
 
-        macd = df_ohlcv.ta.macd()
+    ema = df_ohlcv.ta.ema(length=200)
+    atr = df_ohlcv.ta.atr(length=14)
+    macd = df_ohlcv.ta.macd()
+    rsi = df_ohlcv.ta.rsi()
 
-        df_ohlcv = pd.concat([df_ohlcv, macd], axis=1)
+    df_ohlcv = pd.concat([df_ohlcv, ema, atr, macd, rsi], axis=1)
+    df_ohlcv = df_ohlcv.loc[:,~df_ohlcv.columns.duplicated()]
 
-        count = len(df_ohlcv)
+    df_ohlcv['Supertrend'], _, _ = get_supertrend(df_ohlcv['high'], df_ohlcv['low'], df_ohlcv['close'], 10, 3)
+    df_ohlcv['st_signal'] = st_strategy(df_ohlcv['close'], df_ohlcv['Supertrend'])
 
-        macd_a = df_ohlcv['MACD_12_26_9'][count-2]
-        macd_b = df_ohlcv['MACD_12_26_9'][count-3]
-    except:
-        return Signal
+    df_ohlcv['Filt'], df_ohlcv['Upward'], df_ohlcv['Downward'] = get_range_filter(df_ohlcv['close'], 100, 4)
+    df_ohlcv['rf_signal'] = rf_strategy(df_ohlcv['close'], df_ohlcv['Filt'], df_ohlcv['Upward'], df_ohlcv['Downward']) 
 
-    if macd_a > 0 and macd_b < 0:
-        Signal = "BUY_POSITION"
-    elif macd_a < 0 and macd_b > 0:
-        Signal = "SELL_POSITION"
-    else:
-        Signal = "HOLD_POSITION"
+    df_ohlcv['macd_signal'] = macd_cross_strategy(df_ohlcv['MACD_12_26_9'])
+    df_ohlcv['macdh_signal'] = macdh_cross_strategy(df_ohlcv['MACDh_12_26_9'])
 
-    return Signal
+    return df_ohlcv
 
-def find_signal_macd_4c_sign(exchange, pair, timeframe, limit):
+def find_signal_macd_updown_rf_sign(df_ohlcv):
     Signal = "Non-Signal"
     try:
-        df_ohlcv = exchange.fetch_ohlcv(pair ,timeframe=timeframe, limit=limit)
-        df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
-        df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
-
-        macd = df_ohlcv.ta.macd()
-        rsi = df_ohlcv.ta.rsi()
-
-        df_ohlcv = pd.concat([df_ohlcv, macd, rsi], axis=1)
-
         count = len(df_ohlcv)
 
-        macd_a = df_ohlcv['MACD_12_26_9'][count-2]
-        macd_b = df_ohlcv['MACD_12_26_9'][count-3]
+        macd_signal = df_ohlcv['macd_signal'][count-2]
+        rsi_0 = df_ohlcv['RSI_14'][count-2]
+        rsi_1 = df_ohlcv['RSI_14'][count-3]
+        macdh_signal_0 = df_ohlcv['macdh_signal'][count-2]
+        macdh_signal_1 = df_ohlcv['macdh_signal'][count-3]
+        macdh_signal_2 = df_ohlcv['macdh_signal'][count-4]
+        macdh_signal_3 = df_ohlcv['macdh_signal'][count-5]
+        macdh_signal_4 = df_ohlcv['macdh_signal'][count-6]
 
-        rsi_a = df_ohlcv['RSI_14'][count-2]
-        rsi_b = df_ohlcv['RSI_14'][count-3]
+        upward = df_ohlcv['Upward'][count-2]
+        downward = df_ohlcv['Downward'][count-2]
 
-        macdh_a = df_ohlcv['MACDh_12_26_9'][count-2]
-        macdh_b = df_ohlcv['MACDh_12_26_9'][count-3]
-        macdh_c = df_ohlcv['MACDh_12_26_9'][count-4]
-        macdh_d = df_ohlcv['MACDh_12_26_9'][count-5]
-        macdh_e = df_ohlcv['MACDh_12_26_9'][count-6]
-        macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
-        macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
+        if macd_signal == 1:
+            if macdh_signal_0 == 1 or macdh_signal_1 == 1 or \
+            macdh_signal_2 == 1 or macdh_signal_3 == 1 or macdh_signal_4 == 1:
+                if rsi_0 > 50 and rsi_0 < 70 and (rsi_0 - rsi_1) > 1:
+                    if upward > 0 and upward < 10:
+                        Signal = "Buy_Signal"
+        elif macd_signal == -1:
+            if macdh_signal_0 == -1 or macdh_signal_1 == -1 or \
+            macdh_signal_2 == -1 or macdh_signal_3 == -1 or macdh_signal_4 == -1:
+                if rsi_0 > 30 and rsi_0 < 50 and (rsi_1 - rsi_0) > 1:
+                    if downward > 0 and downward < 10:
+                        Signal = "Sell_Signal"
 
-        _, upward, downward = range_filter_signal(df_ohlcv, 100, 4)
+        return Signal
     except:
         return Signal
 
-    len_ward = len(upward)
-    if macd_a > 0 and macd_b < 0:
-        print("MACD WILL UP TREND")
-        if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or \
-        (macdh_b > 0 and macdh_c < 0 and macdh_c > macdh_d) or \
-        (macdh_c > 0 and macdh_d < 0 and macdh_d > macdh_e) or \
-        (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or \
-        (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
-            print("MACD HAS NEARLY CROSS UP")
-            if rsi_a > 50 and rsi_a < 70 and (rsi_a - rsi_b) > 1:
-                print("RSI CONDITION PASS")
-                if upward[len_ward-1] > 0 and upward[len_ward-1] < 10:
-                    print("UP WARD TREND")
-                    Signal = "Buy_Signal"
-    elif macd_a < 0 and macd_b > 0:
-        print("MACD WILL DOWN TREND")
-        if (macdh_a < 0 and macdh_b > 0 and macdh_b < macdh_c) or \
-        (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or \
-        (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or \
-        (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or \
-        (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
-            print("MACD HAS NEARLY CROSS DOWN")
-            if rsi_a > 30 and rsi_a < 50 and (rsi_b - rsi_a) > 1:
-                print("RSI CONDITION PASS")
-                if downward[len_ward-1] > 0 and downward[len_ward-1] < 10:
-                    print("DOWN WARD TREND")
-                    Signal = "Sell_Signal"
-    else:
-        print("MACD ALREADY HAS TREND")
-
-    return Signal
-
-def find_signal_ema_sign(exchange, pair, timeframe, limit):
+def find_st_macd_cross_sign(df_ohlcv):
     Signal = "Non-Signal"
-
     try:
-        df_ohlcv = exchange.fetch_ohlcv(pair ,timeframe=timeframe, limit=limit)
-        df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
-        df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
-    
-        ema_12 = df_ohlcv.ta.ema(close=df_ohlcv.ta.ohlc4(), length=12)
-        ema_26 = df_ohlcv.ta.ema(close=df_ohlcv.ta.ohlc4(), length=26)
-        macd = df_ohlcv.ta.macd()
-        rsi = df_ohlcv.ta.rsi()
-    
-        df_ohlcv = pd.concat([df_ohlcv, ema_12, ema_26, macd, rsi], axis=1)
-    
         count = len(df_ohlcv)
-    
-        ema_fast_a = df_ohlcv['EMA_12'][count-2]
-        ema_slow_a = df_ohlcv['EMA_26'][count-2]
 
-        ema_fast_b = df_ohlcv['EMA_12'][count-3] 
-        ema_slow_b = df_ohlcv['EMA_26'][count-3]
+        st_signal = df_ohlcv['st_signal'][count-2]
+        macd_signal_0 = df_ohlcv['macd_signal'][count-2]
+        macd_signal_1 = df_ohlcv['macd_signal'][count-3]
+        macd_signal_2 = df_ohlcv['macd_signal'][count-4]
+        macd_signal_3 = df_ohlcv['macd_signal'][count-5]
+        macd_signal_4 = df_ohlcv['macd_signal'][count-6]
 
-        rsi_a = round(df_ohlcv['RSI_14'][count-2], 1)
+        if st_signal == 1 and (macd_signal_0 == 1 or macd_signal_1 == 1 or macd_signal_2 == 1 or macd_signal_3 == 1 or macd_signal_4 == 1):
+            Signal = "Buy_Signal"
+        elif st_signal == -1 and (macd_signal_0 == -1 or macd_signal_1 == -1 or macd_signal_2 == -1 or macd_signal_3 == -1 or macd_signal_4 == -1):
+            Signal = "Sell_Signal"
 
-        macd_a = df_ohlcv['MACDh_12_26_9'][count-2]
-        macd_b = df_ohlcv['MACDh_12_26_9'][count-3]
-        macd_c = df_ohlcv['MACDh_12_26_9'][count-4]
-        macd_d = df_ohlcv['MACDh_12_26_9'][count-5]    
+        return Signal
     except:
         return Signal
 
-    if ema_fast_a < ema_slow_a and ema_fast_b > ema_slow_b:
-        print("EMA CROSS UP")
-        if rsi_a > 35 and rsi_a < 65:
-            print("RSI RANGE NORMAL")
-            if (macd_d < 0 and macd_c > 0) or (macd_c < 0 and macd_b > 0) or (macd_b < 0 and macd_a > 0):
-                print("ALREADY CROSS UP NEARLY")
-                Signal = "Buy_Signal"
-    elif ema_fast_a > ema_slow_a and ema_fast_b < ema_slow_b:
-        print("EMA CROSS DOWN")
-        if rsi_a > 35 and rsi_a < 65:
-            print("RSI RANGE NORMAL")
-            if (macd_d > 0 and macd_c < 0) or (macd_c > 0 and macd_b < 0) or (macd_b > 0 and macd_a < 0):
-                print("ALREADY CROSS DOWN NEARLY")
-                Signal = "Sell_Signal"
- 
-    return Signal
-
-def range_filter_signal(source, period, multiple):
-    count = len(source)
-    source = source['close'][:count-1]
-    source_1 = [0]
-
-    source_len = len(source)
-    i = 0
-    while i < (source_len-1):
-        source_1.append(source[i])
-        i += 1
-
-    upward = [0]
-    downward = [0]
-
+def find_ema_200_trend_st_macd_cross_sign(df_ohlcv):
+    Signal = "Non-Signal"
     try:
-        avrng = exp_moving_average(abs(source-source_1), period)
-        smrng = exp_moving_average(avrng, (period*2-1)) * multiple
-        filt = range_filter(source, smrng)
+        count = len(df_ohlcv)
+
+        close_0 = df_ohlcv['close'][count-2]
+        close_1 = df_ohlcv['close'][count-3]
+
+        st_signal = df_ohlcv['st_signal'][count-2]
+        ema_200 = df_ohlcv['EMA_200'][count-2]
+        macd = df_ohlcv['MACD_12_26_9'][count-2]
+
+        if st_signal == 1 and macd > 0 and close_0 > ema_200 and close_0 > close_1:
+            Signal = "Buy_Signal"
+        elif st_signal == -1 and macd < 0 and close_0 < ema_200 and close_0 < close_1:
+            Signal = "Sell_Signal"
+
+        return Signal
     except:
-        return None, upward, downward 
+        return Signal
 
-    j = 0
-    back_filt = 0
-    while j < len(filt):
-        len_ward = len(upward)
-        if j > 0:
-            back_filt = filt[j-1]
+def find_rf_sign(df_ohlcv):
+    Signal = "Non-Signal"
+    try:
+        count = len(df_ohlcv)
 
-        if filt[j] > back_filt:
-            upward.append(upward[len_ward-1] + 1)
-        elif filt[j] < back_filt:
-            upward.append(0)
-        else:
-            upward.append(upward[len_ward-1])
+        rf_signal = df_ohlcv['rf_signal'][count-2]
+        if rf_signal == 1:
+            Signal = "Buy_Signal"
+        elif rf_signal == -1:
+            Signal = "Sell_Signal"
 
-        if filt[j] < back_filt:
-            downward.append(downward[len_ward-1] + 1)
-        elif filt[j] > back_filt:
-            downward.append(0)
-        else:
-            downward.append(downward[len_ward-1])
+        return Signal
+    except:
+        return Signal
 
-        j += 1
+def find_st_sign(df_ohlcv):
+    Signal = "Non-Signal"
+    try:
+        count = len(df_ohlcv)
 
-    return filt, upward, downward
+        st_signal = df_ohlcv['st_signal'][count-2]
+        if st_signal == 1:
+            Signal = "Buy_Signal"
+        elif st_signal == -1:
+            Signal = "Sell_Signal"
 
-def exp_moving_average(values, window):
-    weights = np.exp(np.linspace(1., 0., window))
-    weights /= weights.sum()
-    a = np.convolve(values, weights, mode='full')[:len(values)]
-    a[:window] = a[window]
-    return a
-
-def range_filter(x, r):
-    nz_rng = [0]
-
-    index = 0
-    while index < len(x):
-        len_rng = len(nz_rng)
-        if x[index] > nz_rng[len_rng - 1]:
-            if (x[index] - r[index]) < nz_rng[len_rng - 1]:
-                nz_rng.append(nz_rng[len_rng - 1])
-            else:
-                nz_rng.append(x[index] - r[index])
-        elif (x[index] + r[index] > nz_rng[len_rng - 1]):
-            nz_rng.append(nz_rng[len_rng - 1])
-        else:
-            nz_rng.append(x[index] + r[index])
-        index += 1
-    return nz_rng
+        return Signal
+    except:
+        return Signal

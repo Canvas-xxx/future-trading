@@ -1,14 +1,11 @@
 import ccxt
 import settings as ENV
-import pandas as pd
-import pandas_ta as ta
-import pprint36 as pprint
 import moment
 import math
 import pymongo
 from services.markets import get_market_list
 from services.request import push_notify_message
-from services.signal import range_filter_signal
+from services.signal import get_df_ohlcv, find_signal_macd_updown_rf_sign 
 
 API_READING_KEY = ENV.API_READING_KEY
 SECRET_READING_KEY = ENV.SECRET_READING_KEY
@@ -19,7 +16,6 @@ SL_PERCENTAGE = ENV.SL_PERCENTAGE
 TP_PERCENTAGE = ENV.TP_PERCENTAGE
 LEVERAGE = ENV.LEVERAGE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
-# LIMIT_SYMBOLS = ENV.LIMIT_SYMBOLS
 DATABASE_URL = ENV.DATABASE_URL
 
 exchange = ccxt.binanceusdm({
@@ -38,8 +34,6 @@ my_trades = client.binance.my_trades
 def schedule_backtest():
     db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
     markets = list(db_markets)
-    # markets = get_market_list(exchange, 'future', 'USDT')
-    # markets = markets[0:LIMIT_SYMBOLS]
 
     summary_total = 0
     summary_success = 0
@@ -185,9 +179,7 @@ def backtest_symbol(symbol, back_test_limit):
     timeframe = TF_DURATION + TF_UNIT
     limit = back_test_limit 
 
-    df_ohlcv = exchange.fetch_ohlcv(symbol ,timeframe=timeframe, limit=limit)
-    df_ohlcv = pd.DataFrame(df_ohlcv, columns =['datetime', 'open','high','low','close','volume'])
-    df_ohlcv['datetime'] = pd.to_datetime(df_ohlcv['datetime'], unit='ms')
+    df_ohlcv = get_df_ohlcv(exchange, symbol, timeframe, limit)
 
     total_signal = 0
     success_signal = 0
@@ -217,7 +209,7 @@ def backtest_symbol(symbol, back_test_limit):
         df_ohlcv_range = df_ohlcv[0:index]
 
         if signal == None:
-            s = find_signal_macd_4c_sign(exchange, df_ohlcv_range, symbol)
+            s = find_signal_macd_updown_rf_sign(df_ohlcv_range)
             if s == "Buy_Signal" or s == "Sell_Signal":
                 datetime = df_ohlcv['datetime'][index-1]
                 position_price = df_ohlcv['open'][index-1]
@@ -316,56 +308,6 @@ def backtest_symbol(symbol, back_test_limit):
 
     print("##################################")
     return total_signal, success_signal, fail_signal, orders_inform_list, avg_close_candle, current_order_position_date, current_order_position_number
-
-def find_signal_macd_4c_sign(exchange, df_ohlcv, pair):
-    Signal = "Non-Signal"
-    try:
-        macd = df_ohlcv.ta.macd()
-        rsi = df_ohlcv.ta.rsi()
-
-        df_ohlcv = pd.concat([df_ohlcv, macd, rsi], axis=1)
-
-        count = len(df_ohlcv)
-
-        macd_a = df_ohlcv['MACD_12_26_9'][count-2]
-        macd_b = df_ohlcv['MACD_12_26_9'][count-3]
-
-        rsi_a = df_ohlcv['RSI_14'][count-2]
-        rsi_b = df_ohlcv['RSI_14'][count-3]
-
-        macdh_a = df_ohlcv['MACDh_12_26_9'][count-2]
-        macdh_b = df_ohlcv['MACDh_12_26_9'][count-3]
-        macdh_c = df_ohlcv['MACDh_12_26_9'][count-4]
-        macdh_d = df_ohlcv['MACDh_12_26_9'][count-5]
-        macdh_e = df_ohlcv['MACDh_12_26_9'][count-6]
-        macdh_f = df_ohlcv['MACDh_12_26_9'][count-7]
-        macdh_g = df_ohlcv['MACDh_12_26_9'][count-8]
-        
-        _, upward, downward = range_filter_signal(df_ohlcv, 100, 4)
-    except:
-        return Signal
-
-    len_ward = len(upward)
-    if macd_a > 0 and macd_b < 0:
-        if (macdh_a > 0 and macdh_b < 0 and macdh_b > macdh_c) or \
-        (macdh_b > 0 and macdh_c < 0 and macdh_c > macdh_d) or \
-        (macdh_c > 0 and macdh_d < 0 and macdh_d > macdh_e) or \
-        (macdh_d > 0 and macdh_e < 0 and macdh_e > macdh_f) or \
-        (macdh_e > 0 and macdh_f < 0 and macdh_f > macdh_g):
-            if rsi_a > 50 and rsi_a < 70 and (rsi_a - rsi_b) > 1:
-                if upward[len_ward-1] > 0 and upward[len_ward-1] < 10:
-                    Signal = "Buy_Signal"
-    elif macd_a < 0 and macd_b > 0:
-        if (macdh_a < 0 and macdh_b > 0 and macdh_b < macdh_c) or \
-        (macdh_b < 0 and macdh_c > 0 and macdh_c < macdh_d) or \
-        (macdh_c < 0 and macdh_d > 0 and macdh_d < macdh_e) or \
-        (macdh_d < 0 and macdh_e > 0 and macdh_e < macdh_f) or \
-        (macdh_e < 0 and macdh_f > 0 and macdh_f < macdh_g):
-            if rsi_a > 30 and rsi_a < 50 and (rsi_b - rsi_a) > 1:
-                if downward[len_ward-1] > 0 and downward[len_ward-1] < 10:
-                    Signal = "Sell_Signal"
-
-    return Signal
 
 def retreive_my_trades():
     markets = get_market_list(exchange, 'future', 'USDT')
