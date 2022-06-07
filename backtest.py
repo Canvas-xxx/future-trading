@@ -15,6 +15,7 @@ BACK_TEST_LIMIT = ENV.BACK_TEST_LIMIT
 SL_PERCENTAGE = ENV.SL_PERCENTAGE
 TP_PERCENTAGE = ENV.TP_PERCENTAGE
 LEVERAGE = ENV.LEVERAGE
+FUTURE_POSITION_SIZE = ENV.FUTURE_POSITION_SIZE
 LINE_NOTIFY_TOKEN = ENV.LINE_NOTIFY_TOKEN
 DATABASE_URL = ENV.DATABASE_URL
 
@@ -107,9 +108,23 @@ def schedule_backtest():
 
         try:
             summary_profit = ((TP_PERCENTAGE * summary_success) - (SL_PERCENTAGE * summary_fail)) * LEVERAGE
+            realized_pnl = (summary_profit / 100) * FUTURE_POSITION_SIZE
         except:
             summary_profit = 0
         notify_message += "\n""Summary Profit Percentage " + str(summary_profit) + "%"
+        notify_message += "\n""Realized PNL " + str(realized_pnl) + "USDT"
+
+        try:
+            start_time = exchange.parse8601 (str(orders_date_list[0]) + "T00:00:00")
+            my_trades_list = my_trades.aggregate([{ "$sort": {  "datetime": -1  } }]) 
+            my_trades_list = list(filter(lambda x: x.get('time') >= start_time, my_trades_list))
+            reality_pnl = 0
+            for my_trade in my_trades_list:
+                reality_pnl += float(my_trade.get('realizedPnl')) 
+        except:
+            reality_pnl = 0
+        reality_pnl = round(reality_pnl)
+        notify_message += "\n""Reality PNL " + str(reality_pnl) + "USDT"
 
         notify_message += "\n""#####################"
 
