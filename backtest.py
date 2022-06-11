@@ -48,6 +48,10 @@ def schedule_backtest():
     avg_fault_candle = 0
     avg_all_symbol_close_candle = 0
 
+    count_30_days_success_position = 0
+    count_30_days_fail_position = 0
+    month_ago = exchange.parse8601(str(moment.utcnow().subtract(month=1).zero)) 
+
     for market in markets:
         try:
             total, success, fail, orders_inform_list, avg_close_candle, _, _ = backtest_symbol(market.get('symbol'), BACK_TEST_LIMIT)
@@ -70,6 +74,13 @@ def schedule_backtest():
                 else:
                     count_fail_position += 1
                     avg_fault_candle += cd 
+
+                order_time = exchange.parse8601(str(order_inform.get("datetime")) + "T00:00:00")
+                if order_time > month_ago:
+                    if st == "S":
+                        count_30_days_success_position += 1
+                    else:
+                        count_30_days_fail_position += 1
 
     notify_message = None
     if summary_total > 0 and summary_success > 0:
@@ -109,8 +120,13 @@ def schedule_backtest():
         try:
             summary_profit = ((TP_PERCENTAGE * summary_success) - (SL_PERCENTAGE * summary_fail)) * LEVERAGE
             realized_pnl = (summary_profit / 100) * FUTURE_POSITION_SIZE
+            summary_profit_month_ago = ((TP_PERCENTAGE * count_30_days_success_position) - (SL_PERCENTAGE * count_30_days_fail_position)) * LEVERAGE
+            realized_pnl_month_ago = (summary_profit_month_ago / 100) * FUTURE_POSITION_SIZE
         except:
             summary_profit = 0
+            realized_pnl = 0
+            summary_profit_month_ago = 0
+            realized_pnl_month_ago = 0
         notify_message += "\n""Summary Profit Percentage " + str(summary_profit) + "%"
         notify_message += "\n""Realized PNL " + str(realized_pnl) + "USDT"
 
@@ -119,12 +135,23 @@ def schedule_backtest():
             my_trades_list = my_trades.aggregate([{ "$sort": {  "datetime": -1  } }]) 
             my_trades_list = list(filter(lambda x: x.get('time') >= start_time, my_trades_list))
             reality_pnl = 0
+            reality_pnl_month_ago = 0
             for my_trade in my_trades_list:
                 reality_pnl += float(my_trade.get('realizedPnl')) 
+                if my_trade.get('time') >= month_ago:
+                    reality_pnl_month_ago += float(my_trade.get('realizedPnl'))
         except:
             reality_pnl = 0
+            reality_pnl_month_ago = 0
         reality_pnl = round(reality_pnl)
-        notify_message += "\n""Reality PNL " + str(reality_pnl) + "USDT"
+        notify_message += "\n""Reality PNL " + str(reality_pnl) + "USDT""\n"
+
+        notify_message += "\n""Success Signal(30 Days) " + str(count_30_days_success_position)
+        notify_message += "\n""Fault Signal(30 Days) " + str(count_30_days_fail_position)
+        notify_message += "\n""Summary Profit Pct.(30 Days) " + str(summary_profit_month_ago) + "%"
+        notify_message += "\n""Realized PNL(30 Days) " + str(realized_pnl_month_ago) + "USDT"
+        reality_pnl_month_ago = round(reality_pnl_month_ago)
+        notify_message += "\n""Reality PNL(30 Days) " + str(reality_pnl_month_ago) + "USDT""\n"
 
         notify_message += "\n""#####################"
 
