@@ -9,7 +9,7 @@ from services.signal import get_df_ohlcv, find_signal_macd_updown_rf_sign
 from services.wallet_information import get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
 from services.markets import set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol 
 from services.request import push_notify_message
-from backtest import schedule_backtest, position_backtest_symbol, retreive_my_trades
+from backtest import schedule_backtest, schedule_backtest_month, schedule_backtest_week, schedule_backtest_daily, position_backtest_symbol, retreive_my_trades
 from ranking import schedule_ranking
 
 API_KEY = ENV.API_KEY
@@ -255,11 +255,14 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Quater Backtest Stat Schedule
-    scheduler.add_job(schedule_ranking, 'cron', day_of_week="6", hour='7', minute='10', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_ranking, 'cron', day="1", hour='2', minute='0', second='0', timezone="Africa/Abidjan")
 
     # Backtest Futures Signal
-    scheduler.add_job(schedule_backtest, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest_daily, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest_week, 'cron', day_of_week="0", hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest_month, 'cron', day='1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest, 'cron', day='28', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
     scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")

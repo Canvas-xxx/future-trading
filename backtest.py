@@ -48,10 +48,6 @@ def schedule_backtest():
     avg_fault_candle = 0
     avg_all_symbol_close_candle = 0
 
-    count_30_days_success_position = 0
-    count_30_days_fail_position = 0
-    month_ago = exchange.parse8601(str(moment.utcnow().subtract(month=1).zero)) 
-
     for market in markets:
         try:
             total, success, fail, orders_inform_list, avg_close_candle, _, _ = backtest_symbol(market.get('symbol'), BACK_TEST_LIMIT)
@@ -75,13 +71,6 @@ def schedule_backtest():
                     count_fail_position += 1
                     avg_fault_candle += cd 
 
-                order_time = exchange.parse8601(str(order_inform.get("datetime")) + "T00:00:00")
-                if order_time > month_ago:
-                    if st == "S":
-                        count_30_days_success_position += 1
-                    else:
-                        count_30_days_fail_position += 1
-
     notify_message = None
     if summary_total > 0 and summary_success > 0:
         orders_date_list.sort()
@@ -104,7 +93,7 @@ def schedule_backtest():
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
         notify_message += "\n""Start Order At " + str(orders_date_list[0])
-        notify_message += "\n""Maximum Number of Positions " + str(high_same_day_orders)
+        notify_message += "\n""Maximum Number of Positions " + str(high_same_day_orders) + "\n"
         notify_message += "\n""Total Signal " + str(summary_total)
         notify_message += "\n""Success Signal " + str(summary_success)
         notify_message += "\n""Fault Signal " + str(summary_fail)
@@ -120,13 +109,9 @@ def schedule_backtest():
         try:
             summary_profit = ((TP_PERCENTAGE * summary_success) - (SL_PERCENTAGE * summary_fail)) * LEVERAGE
             realized_pnl = (summary_profit / 100) * FUTURE_POSITION_SIZE
-            summary_profit_month_ago = ((TP_PERCENTAGE * count_30_days_success_position) - (SL_PERCENTAGE * count_30_days_fail_position)) * LEVERAGE
-            realized_pnl_month_ago = (summary_profit_month_ago / 100) * FUTURE_POSITION_SIZE
         except:
             summary_profit = 0
             realized_pnl = 0
-            summary_profit_month_ago = 0
-            realized_pnl_month_ago = 0
         notify_message += "\n""Summary Profit Percentage " + str(summary_profit) + "%"
         notify_message += "\n""Realized PNL " + str(realized_pnl) + "USDT"
 
@@ -135,23 +120,231 @@ def schedule_backtest():
             my_trades_list = my_trades.aggregate([{ "$sort": {  "datetime": -1  } }]) 
             my_trades_list = list(filter(lambda x: x.get('time') >= start_time, my_trades_list))
             reality_pnl = 0
-            reality_pnl_month_ago = 0
+
             for my_trade in my_trades_list:
                 reality_pnl += float(my_trade.get('realizedPnl')) 
+        except:
+            reality_pnl = 0
+        reality_pnl = round(reality_pnl)
+        notify_message += "\n""Reality PNL " + str(reality_pnl) + "USDT"
+        notify_message += "\n""#####################"
+
+    if notify_message != None:
+        push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
+
+def schedule_backtest_month():
+    db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
+    markets = list(db_markets)
+
+    summary_total = 0
+    summary_success = 0
+    orders_date_list = []
+
+    count_30_days_success_position = 0
+    count_30_days_fail_position = 0
+    month_ago = exchange.parse8601(str(moment.utcnow().subtract(month=1).zero)) 
+
+    for market in markets:
+        try:
+            total, success, _, orders_inform_list, _, _, _ = backtest_symbol(market.get('symbol'), BACK_TEST_LIMIT)
+        except:
+            total, success, orders_inform_list = 0, 0, []
+
+        summary_total += total
+        summary_success += success
+
+        orders_date_list += list(map(lambda order_inform: order_inform.get("datetime"), orders_inform_list))
+        if total > 0:
+            for order_inform in orders_inform_list:
+                st = order_inform.get("state")
+                order_time = exchange.parse8601(str(order_inform.get("datetime")) + "T00:00:00")
+
+                if order_time > month_ago:
+                    if st == "S":
+                        count_30_days_success_position += 1
+                    else:
+                        count_30_days_fail_position += 1
+
+    notify_message = None
+    if summary_total > 0 and summary_success > 0:
+        orders_date_list.sort()
+        orders_date_list = list(map(lambda order_d: moment.utc(order_d).format("YYYY-MM-DD"), orders_date_list))
+
+        notify_message = "\n""### Month Schedule Backtest ###"
+        notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
+        notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
+
+        try:
+            summary_profit_month_ago = ((TP_PERCENTAGE * count_30_days_success_position) - (SL_PERCENTAGE * count_30_days_fail_position)) * LEVERAGE
+            realized_pnl_month_ago = (summary_profit_month_ago / 100) * FUTURE_POSITION_SIZE
+        except:
+            summary_profit_month_ago = 0
+            realized_pnl_month_ago = 0
+
+        try:
+            start_time = exchange.parse8601 (str(orders_date_list[0]) + "T00:00:00")
+            my_trades_list = my_trades.aggregate([{ "$sort": {  "datetime": -1  } }]) 
+            my_trades_list = list(filter(lambda x: x.get('time') >= start_time, my_trades_list))
+            reality_pnl_month_ago = 0
+
+            for my_trade in my_trades_list:
                 if my_trade.get('time') >= month_ago:
                     reality_pnl_month_ago += float(my_trade.get('realizedPnl'))
         except:
-            reality_pnl = 0
             reality_pnl_month_ago = 0
-        reality_pnl = round(reality_pnl)
-        notify_message += "\n""Reality PNL " + str(reality_pnl) + "USDT""\n"
 
         notify_message += "\n""Success Signal(30 Days) " + str(count_30_days_success_position)
         notify_message += "\n""Fault Signal(30 Days) " + str(count_30_days_fail_position)
         notify_message += "\n""Summary Profit Pct.(30 Days) " + str(summary_profit_month_ago) + "%"
         notify_message += "\n""Realized PNL(30 Days) " + str(realized_pnl_month_ago) + "USDT"
         reality_pnl_month_ago = round(reality_pnl_month_ago)
-        notify_message += "\n""Reality PNL(30 Days) " + str(reality_pnl_month_ago) + "USDT""\n"
+        notify_message += "\n""Reality PNL(30 Days) " + str(reality_pnl_month_ago) + "USDT"
+
+        notify_message += "\n""#####################"
+
+    if notify_message != None:
+        push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
+
+def schedule_backtest_week():
+    db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
+    markets = list(db_markets)
+
+    summary_total = 0
+    summary_success = 0
+    orders_date_list = []
+
+    count_7_days_success_position = 0
+    count_7_days_fail_position = 0
+    week_ago = exchange.parse8601(str(moment.utcnow().subtract(day=7).zero)) 
+
+    for market in markets:
+        try:
+            total, success, _, orders_inform_list, _, _, _ = backtest_symbol(market.get('symbol'), BACK_TEST_LIMIT)
+        except:
+            total, success, orders_inform_list = 0, 0, []
+
+        summary_total += total
+        summary_success += success
+
+        orders_date_list += list(map(lambda order_inform: order_inform.get("datetime"), orders_inform_list))
+        if total > 0:
+            for order_inform in orders_inform_list:
+                st = order_inform.get("state")
+                order_time = exchange.parse8601(str(order_inform.get("datetime")) + "T00:00:00")
+
+                if order_time > week_ago:
+                    if st == "S":
+                        count_7_days_success_position += 1
+                    else:
+                        count_7_days_fail_position += 1
+
+    notify_message = None
+    if summary_total > 0 and summary_success > 0:
+        orders_date_list.sort()
+        orders_date_list = list(map(lambda order_d: moment.utc(order_d).format("YYYY-MM-DD"), orders_date_list))
+
+        notify_message = "\n""### Week Schedule Backtest ###"
+        notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
+        notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
+
+        try:
+            summary_profit_week_ago = ((TP_PERCENTAGE * count_7_days_success_position) - (SL_PERCENTAGE * count_7_days_fail_position)) * LEVERAGE
+            realized_pnl_week_ago = (summary_profit_week_ago / 100) * FUTURE_POSITION_SIZE
+        except:
+            summary_profit_week_ago= 0
+            realized_pnl_week_ago= 0
+
+        try:
+            start_time = exchange.parse8601 (str(orders_date_list[0]) + "T00:00:00")
+            my_trades_list = my_trades.aggregate([{ "$sort": {  "datetime": -1  } }]) 
+            my_trades_list = list(filter(lambda x: x.get('time') >= start_time, my_trades_list))
+            reality_pnl_week_ago = 0
+
+            for my_trade in my_trades_list:
+                if my_trade.get('time') >= week_ago:
+                    reality_pnl_week_ago += float(my_trade.get('realizedPnl'))
+        except:
+            reality_pnl_week_ago = 0
+
+        notify_message += "\n""Success Signal(7 Days) " + str(count_7_days_success_position)
+        notify_message += "\n""Fault Signal(7 Days) " + str(count_7_days_fail_position)
+        notify_message += "\n""Summary Profit Pct.(7 Days) " + str(summary_profit_week_ago) + "%"
+        notify_message += "\n""Realized PNL(7 Days) " + str(realized_pnl_week_ago) + "USDT"
+        reality_pnl_week_ago = round(reality_pnl_week_ago)
+        notify_message += "\n""Reality PNL(7 Days) " + str(reality_pnl_week_ago) + "USDT"
+
+        notify_message += "\n""#####################"
+
+    if notify_message != None:
+        push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
+
+def schedule_backtest_daily():
+    db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
+    markets = list(db_markets)
+
+    summary_total = 0
+    summary_success = 0
+    orders_date_list = []
+
+    count_1_days_success_position = 0
+    count_1_days_fail_position = 0
+    daily_ago = exchange.parse8601(str(moment.utcnow().subtract(day=1).zero)) 
+
+    for market in markets:
+        try:
+            total, success, _, orders_inform_list, _, _, _ = backtest_symbol(market.get('symbol'), BACK_TEST_LIMIT)
+        except:
+            total, success, orders_inform_list = 0, 0, []
+
+        summary_total += total
+        summary_success += success
+
+        orders_date_list += list(map(lambda order_inform: order_inform.get("datetime"), orders_inform_list))
+        if total > 0:
+            for order_inform in orders_inform_list:
+                st = order_inform.get("state")
+                order_time = exchange.parse8601(str(order_inform.get("datetime")) + "T00:00:00")
+
+                if order_time > daily_ago:
+                    if st == "S":
+                        count_1_days_success_position += 1
+                    else:
+                        count_1_days_fail_position += 1
+
+    notify_message = None
+    if summary_total > 0 and summary_success > 0:
+        orders_date_list.sort()
+        orders_date_list = list(map(lambda order_d: moment.utc(order_d).format("YYYY-MM-DD"), orders_date_list))
+
+        notify_message = "\n""### Daily Schedule Backtest ###"
+        notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
+        notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
+
+        try:
+            summary_profit_daily_ago = ((TP_PERCENTAGE * count_1_days_success_position) - (SL_PERCENTAGE * count_1_days_fail_position)) * LEVERAGE
+            realized_pnl_daily_ago = (summary_profit_daily_ago / 100) * FUTURE_POSITION_SIZE
+        except:
+            summary_profit_daily_ago= 0
+            realized_pnl_daily_ago= 0
+
+        try:
+            start_time = exchange.parse8601 (str(orders_date_list[0]) + "T00:00:00")
+            my_trades_list = my_trades.aggregate([{ "$sort": {  "datetime": -1  } }]) 
+            my_trades_list = list(filter(lambda x: x.get('time') >= start_time, my_trades_list))
+            reality_pnl_daily_ago = 0
+
+            for my_trade in my_trades_list:
+                if my_trade.get('time') >= daily_ago:
+                    reality_pnl_daily_ago += float(my_trade.get('realizedPnl'))
+        except:
+            reality_pnl_daily_ago = 0
+
+        notify_message += "\n""Success Signal(1 Days) " + str(count_1_days_success_position)
+        notify_message += "\n""Fault Signal(1 Days) " + str(count_1_days_fail_position)
+        notify_message += "\n""Summary Profit Pct.(1 Days) " + str(summary_profit_daily_ago) + "%"
+        notify_message += "\n""Realized PNL(1 Days) " + str(realized_pnl_daily_ago) + "USDT"
+        reality_pnl_daily_ago = round(reality_pnl_daily_ago)
+        notify_message += "\n""Reality PNL(1 Days) " + str(reality_pnl_daily_ago) + "USDT"
 
         notify_message += "\n""#####################"
 
