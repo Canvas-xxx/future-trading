@@ -454,6 +454,67 @@ def backtest_symbol(symbol, back_test_limit):
 
                 current_order_position_date = datetime
                 current_order_position_number = 1
+
+                last_candle_high = df_ohlcv['high'][index]
+                last_candle_low = df_ohlcv['low'][index]
+                if s == "Buy_Signal":
+                    sl_price = (position_price * (1 - (SL_PERCENTAGE / 100))) 
+                    tp_price = (position_price * ((TP_PERCENTAGE / 100) + 1)) 
+                    if last_candle_low <= sl_price:
+                        fail_signal += 1
+                        total_signal += 1
+                        signal = None
+                        print("Position at", datetime, "(" + str(count_candle_each_position) + ")", "[F]")
+                        orders_inform_list.append({
+                            "datetime": datetime,
+                            "candle": count_candle_each_position,
+                            "state": "F"
+                        })
+                        current_order_position_date = None
+                        current_order_position_number = 0
+                    elif last_candle_high >= tp_price: 
+                        success_signal += 1
+                        total_signal += 1
+                        signal = None
+                        count_has_position_symbol += 1
+                        print("Position at", datetime, "(" + str(count_candle_each_position) + ")", "[S]")
+                        orders_inform_list.append({
+                            "datetime": datetime,
+                            "candle": count_candle_each_position,
+                            "state": "S"
+                        })
+                        current_order_position_date = None
+                        current_order_position_number = 0
+                elif s == "Sell_Signal":
+                    sl_price = (position_price * ((SL_PERCENTAGE / 100) + 1)) 
+                    tp_price = (position_price * (1 - (TP_PERCENTAGE / 100))) 
+                    if last_candle_high >= sl_price:
+                        fail_signal += 1
+                        total_signal += 1
+                        signal = None
+                        count_has_position_symbol += 1
+                        print("Position at", datetime, "(" + str(count_candle_each_position) + ")", "[F]")
+                        orders_inform_list.append({
+                            "datetime": datetime,
+                            "candle": count_candle_each_position,
+                            "state": "F"
+                        })
+                        current_order_position_date = None
+                        current_order_position_number = 0
+                    elif last_candle_low <= tp_price:
+                        success_signal += 1
+                        total_signal += 1
+                        signal = None
+                        count_has_position_symbol += 1
+                        print("Position at", datetime, "(" + str(count_candle_each_position) + ")", "[S]")
+                        orders_inform_list.append({
+                            "datetime": datetime,
+                            "candle": count_candle_each_position,
+                            "state": "S"
+                        })
+                        current_order_position_date = None
+                        current_order_position_number = 0
+
         elif signal != None:
             last_candle_high = df_ohlcv['high'][index]
             last_candle_low = df_ohlcv['low'][index]
