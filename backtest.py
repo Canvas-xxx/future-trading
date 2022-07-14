@@ -76,7 +76,7 @@ def schedule_backtest():
                     avg_fault_candle += cd
 
     notify_message = None
-    if summary_total > 0 and summary_success > 0:
+    if summary_total > 0:
         orders_date_list.sort()
         orders_date_list = list(map(lambda order_d: moment.utc(
             order_d).format("YYYY-MM-DD"), orders_date_list))
@@ -179,14 +179,14 @@ def schedule_backtest_month():
                 order_time = exchange.parse8601(
                     str(order_inform.get("end_datetime")) + "T00:00:00")
 
-                if order_time > month_ago:
+                if order_time >= month_ago:
                     if st == "S":
                         count_30_days_success_position += 1
                     else:
                         count_30_days_fail_position += 1
 
     notify_message = None
-    if summary_total > 0 and summary_success > 0:
+    if summary_total > 0:
         orders_date_list.sort()
         orders_date_list = list(map(lambda order_d: moment.utc(
             order_d).format("YYYY-MM-DD"), orders_date_list))
@@ -267,14 +267,14 @@ def schedule_backtest_week():
                 order_time = exchange.parse8601(
                     str(order_inform.get("end_datetime")) + "T00:00:00")
 
-                if order_time > week_ago:
+                if order_time >= week_ago:
                     if st == "S":
                         count_7_days_success_position += 1
                     else:
                         count_7_days_fail_position += 1
 
     notify_message = None
-    if summary_total > 0 and summary_success > 0:
+    if summary_total > 0:
         orders_date_list.sort()
         orders_date_list = list(map(lambda order_d: moment.utc(
             order_d).format("YYYY-MM-DD"), orders_date_list))
@@ -355,14 +355,14 @@ def schedule_backtest_daily():
                 order_time = exchange.parse8601(
                     str(order_inform.get("end_datetime")) + "T00:00:00")
 
-                if order_time > daily_ago:
+                if order_time >= daily_ago:
                     if st == "S":
                         count_1_days_success_position += 1
                     else:
                         count_1_days_fail_position += 1
 
     notify_message = None
-    if summary_total > 0 and summary_success > 0:
+    if summary_total > 0:
         orders_date_list.sort()
         orders_date_list = list(map(lambda order_d: moment.utc(
             order_d).format("YYYY-MM-DD"), orders_date_list))
