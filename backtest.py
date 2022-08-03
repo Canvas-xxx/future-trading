@@ -599,7 +599,7 @@ def backtest_symbol(symbol, back_test_limit):
             last_candle_high = df_ohlcv['high'][index]
             last_candle_low = df_ohlcv['low'][index]
             current_order_position_number += 1
-            end_datetime = df_ohlcv['datetime'][index-1]
+            end_datetime = df_ohlcv['datetime'][index]
 
             if signal == "Buy_Signal":
                 avg_close_candle += 1
