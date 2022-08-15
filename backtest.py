@@ -246,7 +246,9 @@ def schedule_backtest_week():
     orders_date_list = []
 
     count_7_days_success_position = 0
+    symbols_success = []
     count_7_days_fail_position = 0
+    symbols_fail = []
     week_ago = exchange.parse8601(str(moment.utcnow().subtract(day=7).zero))
 
     for market in markets:
@@ -270,8 +272,10 @@ def schedule_backtest_week():
                 if order_time >= week_ago:
                     if st == "S":
                         count_7_days_success_position += 1
+                        symbols_success.append({'symbol': market.get("symbol"), 'side': order_inform.get('side')})
                     else:
                         count_7_days_fail_position += 1
+                        symbols_fail.append({'symbol': market.get("symbol"), 'side': order_inform.get('side')})
 
     notify_message = None
     if summary_total > 0:
@@ -283,6 +287,7 @@ def schedule_backtest_week():
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
 
+        realize_trade_symbols = []
         try:
             summary_profit_week_ago = ((TP_PERCENTAGE * count_7_days_success_position) - (
                 SL_PERCENTAGE * count_7_days_fail_position)) * LEVERAGE
@@ -302,7 +307,11 @@ def schedule_backtest_week():
 
             for my_trade in my_trades_list:
                 if my_trade.get('time') >= week_ago:
-                    reality_pnl_week_ago += float(my_trade.get('realizedPnl'))
+                    realizedPnl = float(my_trade.get('realizedPnl')) 
+                    reality_pnl_week_ago += realizedPnl
+                    if realizedPnl != float(0.0):
+                        if not my_trade.get('symbol') in realize_trade_symbols:
+                            realize_trade_symbols.append(my_trade.get('symbol'))
         except:
             reality_pnl_week_ago = 0
 
@@ -317,6 +326,14 @@ def schedule_backtest_week():
         reality_pnl_week_ago = round(reality_pnl_week_ago)
         notify_message += "\n""Reality PNL(7 Days) " + \
             str(reality_pnl_week_ago) + "USDT"
+
+        notify_message += "\n""Exclude Symbols(1 Days)"
+        for symbol in symbols_success:
+            if not symbol.get('symbol') in realize_trade_symbols:
+                notify_message += "\n""- " + symbol.get('side') + " " + symbol.get('symbol') + "(S)"
+        for symbol in symbols_fail:
+            if not symbol.get('symbol') in realize_trade_symbols:
+                notify_message += "\n""- " + symbol.get('side') + " " + symbol.get('symbol') + "(F)"
 
         notify_message += "\n""#####################"
 
@@ -334,7 +351,9 @@ def schedule_backtest_daily():
     orders_date_list = []
 
     count_1_days_success_position = 0
+    symbols_success = []
     count_1_days_fail_position = 0
+    symbols_fail = []
     daily_ago = exchange.parse8601(str(moment.utcnow().subtract(day=1).zero))
 
     for market in markets:
@@ -358,8 +377,10 @@ def schedule_backtest_daily():
                 if order_time >= daily_ago:
                     if st == "S":
                         count_1_days_success_position += 1
+                        symbols_success.append({'symbol': market.get("symbol"), 'side': order_inform.get('side')})
                     else:
                         count_1_days_fail_position += 1
+                        symbols_fail.append({'symbol': market.get("symbol"), 'side': order_inform.get('side')})
 
     notify_message = None
     if summary_total > 0:
@@ -380,6 +401,7 @@ def schedule_backtest_daily():
             summary_profit_daily_ago = 0
             realized_pnl_daily_ago = 0
 
+        realize_trade_symbols = []
         try:
             start_time = exchange.parse8601(
                 str(orders_date_list[0]) + "T00:00:00")
@@ -390,7 +412,11 @@ def schedule_backtest_daily():
 
             for my_trade in my_trades_list:
                 if my_trade.get('time') >= daily_ago:
-                    reality_pnl_daily_ago += float(my_trade.get('realizedPnl'))
+                    realizedPnl = float(my_trade.get('realizedPnl')) 
+                    reality_pnl_daily_ago += realizedPnl
+                    if realizedPnl != float(0.0):
+                        if not my_trade.get('symbol') in realize_trade_symbols:
+                            realize_trade_symbols.append(my_trade.get('symbol'))
         except:
             reality_pnl_daily_ago = 0
 
@@ -405,6 +431,14 @@ def schedule_backtest_daily():
         reality_pnl_daily_ago = round(reality_pnl_daily_ago)
         notify_message += "\n""Reality PNL(1 Days) " + \
             str(reality_pnl_daily_ago) + "USDT"
+
+        notify_message += "\n""Exclude Symbols(1 Days)"
+        for symbol in symbols_success:
+            if not symbol.get('symbol') in realize_trade_symbols:
+                notify_message += "\n""- " + symbol.get('side') + " " + symbol.get('symbol') + "(S)"
+        for symbol in symbols_fail:
+            if not symbol.get('symbol') in realize_trade_symbols:
+                notify_message += "\n""- " + symbol.get('side') + " " + symbol.get('symbol') + "(F)"
 
         notify_message += "\n""#####################"
 
@@ -506,6 +540,7 @@ def backtest_symbol(symbol, back_test_limit):
 
     count = len(df_ohlcv)
     index = 0
+    side = None
 
     print("Symbol", symbol)
     print("TP PERCENTAGE", TP_PERCENTAGE)
@@ -530,6 +565,7 @@ def backtest_symbol(symbol, back_test_limit):
                 last_candle_high = df_ohlcv['high'][index]
                 last_candle_low = df_ohlcv['low'][index]
                 if s == "Buy_Signal":
+                    side = "BUY"
                     sl_price = (position_price * (1 - (SL_PERCENTAGE / 100)))
                     tp_price = (position_price * ((TP_PERCENTAGE / 100) + 1))
                     if last_candle_low <= sl_price:
@@ -542,7 +578,8 @@ def backtest_symbol(symbol, back_test_limit):
                             "datetime": datetime,
                             "end_datetime": end_datetime,
                             "candle": count_candle_each_position,
-                            "state": "F"
+                            "state": "F",
+                            "side": side
                         })
                         current_order_position_date = None
                         current_order_position_number = 0
@@ -557,11 +594,13 @@ def backtest_symbol(symbol, back_test_limit):
                             "datetime": datetime,
                             "end_datetime": end_datetime,
                             "candle": count_candle_each_position,
-                            "state": "S"
+                            "state": "S",
+                            "side": side
                         })
                         current_order_position_date = None
                         current_order_position_number = 0
                 elif s == "Sell_Signal":
+                    side = "SELL"
                     sl_price = (position_price * ((SL_PERCENTAGE / 100) + 1))
                     tp_price = (position_price * (1 - (TP_PERCENTAGE / 100)))
                     if last_candle_high >= sl_price:
@@ -575,7 +614,8 @@ def backtest_symbol(symbol, back_test_limit):
                             "datetime": datetime,
                             "end_datetime": end_datetime,
                             "candle": count_candle_each_position,
-                            "state": "F"
+                            "state": "F",
+                            "side": side
                         })
                         current_order_position_date = None
                         current_order_position_number = 0
@@ -590,7 +630,8 @@ def backtest_symbol(symbol, back_test_limit):
                             "datetime": datetime,
                             "end_datetime": end_datetime,
                             "candle": count_candle_each_position,
-                            "state": "S"
+                            "state": "S",
+                            "side": side
                         })
                         current_order_position_date = None
                         current_order_position_number = 0
@@ -618,7 +659,8 @@ def backtest_symbol(symbol, back_test_limit):
                         "datetime": datetime,
                         "end_datetime": end_datetime,
                         "candle": count_candle_each_position,
-                        "state": "F"
+                        "state": "F",
+                        "side": side
                     })
                     current_order_position_date = None
                     current_order_position_number = 0
@@ -633,7 +675,8 @@ def backtest_symbol(symbol, back_test_limit):
                         "datetime": datetime,
                         "end_datetime": end_datetime,
                         "candle": count_candle_each_position,
-                        "state": "S"
+                        "state": "S",
+                        "side": side
                     })
                     current_order_position_date = None
                     current_order_position_number = 0
@@ -654,7 +697,8 @@ def backtest_symbol(symbol, back_test_limit):
                         "datetime": datetime,
                         "end_datetime": end_datetime,
                         "candle": count_candle_each_position,
-                        "state": "F"
+                        "state": "F",
+                        "side": side
                     })
                     current_order_position_date = None
                     current_order_position_number = 0
@@ -669,7 +713,8 @@ def backtest_symbol(symbol, back_test_limit):
                         "datetime": datetime,
                         "end_datetime": end_datetime,
                         "candle": count_candle_each_position,
-                        "state": "S"
+                        "state": "S",
+                        "side": side
                     })
                     current_order_position_date = None
                     current_order_position_number = 0
