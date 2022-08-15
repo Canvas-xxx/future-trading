@@ -327,7 +327,7 @@ def schedule_backtest_week():
         notify_message += "\n""Reality PNL(7 Days) " + \
             str(reality_pnl_week_ago) + "USDT"
 
-        notify_message += "\n""Exclude Symbols(1 Days)"
+        notify_message += "\n""Exclude Symbols(7 Days)"
         for symbol in symbols_success:
             if not symbol.get('symbol') in realize_trade_symbols:
                 notify_message += "\n""- " + symbol.get('side') + " " + symbol.get('symbol') + "(S)"
