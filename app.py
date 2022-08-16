@@ -58,6 +58,7 @@ def clearance_close_positions():
 def backtest_current_positions():
     positions = get_positions_list(exchange, 'USDT')
     notify_list = []
+    notify_unlist = []
     for position in positions:
         try:
             symbol = position.get('symbol')
@@ -65,7 +66,7 @@ def backtest_current_positions():
         except:
             total, win_rate, avg_success_candle, avg_fault_candle, avg_close_candle, current_order_position_date, current_order_position_number = 0, 0, 0, 0, 0, None, 0
 
-        notify_list.append({
+        group_data = {
             'symbol': position.get('symbol'),
             'total': total,
             'win_rate': win_rate,
@@ -74,7 +75,12 @@ def backtest_current_positions():
             'avg_close_candle': avg_close_candle,
             'current_order_position_date': current_order_position_date,
             'current_order_position_number': current_order_position_number
-        })
+        }
+
+        if current_order_position_date == None and current_order_position_number == 0:
+            notify_unlist.append(group_data)
+        else:
+            notify_list.append(group_data)
 
     if len(notify_list) > 0:
         notify_message = "\n""### Current Position Backtest ###"
@@ -90,18 +96,41 @@ def backtest_current_positions():
             notify_message += "\n""Symbol " + str(pos.get('symbol'))
             notify_message += "\n""Totals " + str(pos.get('total'))
             notify_message += "\n""Win Rate " + str(round(float(pos.get('win_rate')), 2)) + "%"
-            notify_message += "\n""Avg. Success Candle " + str(pos.get('avg_success_candle'))
-            notify_message += "\n""Avg. Fault Candle " + str(pos.get('avg_fault_candle'))
-            notify_message += "\n""Avg. Close Candle " + str(pos.get('avg_close_candle'))
+            # notify_message += "\n""Avg. Success Candle " + str(pos.get('avg_success_candle'))
+            # notify_message += "\n""Avg. Fault Candle " + str(pos.get('avg_fault_candle'))
+            # notify_message += "\n""Avg. Close Candle " + str(pos.get('avg_close_candle'))
             notify_message += "\n""Current Position " + str(locale_date) + ", " + str(pos.get('current_order_position_number'))
             notify_message += "\n""------"
             index += 1
-            if (index % 5) == 0:
+            if (index % 8) == 0:
                 push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
                 notify_message = ""
 
         if len(notify_message) > 0:
             push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
+
+    if len(notify_unlist) > 0:
+        notify_unlist_message = "\n""### Current Unlist Position Backtest ###"
+        index = 0
+        for pos in notify_unlist:
+            locale_date = None
+            try:
+                locale_date = moment.date(pos.get('current_order_position_date')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm")
+            except Exception as e:
+                print("Error Date: ", e) 
+
+            notify_unlist_message += "\n""Symbol " + str(pos.get('symbol'))
+            notify_unlist_message += "\n""Totals " + str(pos.get('total'))
+            notify_unlist_message += "\n""Win Rate " + str(round(float(pos.get('win_rate')), 2)) + "%"
+            notify_unlist_message += "\n""Current Position " + str(locale_date) + ", " + str(pos.get('current_order_position_number'))
+            notify_unlist_message += "\n""------"
+            index += 1
+            if (index % 8) == 0:
+                push_notify_message(LINE_NOTIFY_TOKEN, notify_unlist_message)
+                notify_unlist_message = ""
+
+        if len(notify_unlist_message) > 0:
+            push_notify_message(LINE_NOTIFY_TOKEN, notify_unlist_message)
 
 def future_schedule_job():
     print("############ Schedule(",moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),") ############")
