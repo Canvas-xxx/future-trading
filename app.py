@@ -110,7 +110,7 @@ def backtest_current_positions():
             push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
     if len(notify_unlist) > 0:
-        notify_unlist_message = "\n""### Current Unlist Position Backtest ###"
+        notify_unlist_message = "\n""### Current Unlist Pos. Backtest ###"
         index = 0
         for pos in notify_unlist:
             locale_date = None
