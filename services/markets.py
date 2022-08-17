@@ -51,7 +51,7 @@ def get_amount_from_quote(exchange, symbol, position_size):
     price = ticker.get('close')
     return position_size / price
 
-def create_stop_loss_order(exchange, binance, symbol, precision, side, position_size, stop_loss, tp, leverage):
+def create_stop_loss_order(exchange, binance, symbol, precision, side, position_size, stop_loss, tp, leverage, open_price):
     print("\n""####### Create Order ########")
     print("Symbol", symbol)
     print("Side", side)
@@ -83,11 +83,17 @@ def create_stop_loss_order(exchange, binance, symbol, precision, side, position_
             executed_quantity = float(order['info']['executedQty'])
             order_price = float(cumulative_quote / executed_quantity)
 
+        print("Open Price", order_price)
+        notify_message += "\n""Open Price " + str(open_price)
+
         print("Entry Price", order_price)
         notify_message += "\n""Entry Price " + str(order_price)
     except:
         print("Balance insufficient")
         notify_message += "\n""Balance insufficient"
+
+        print("##########################")
+        notify_message += "\n""#####################"
         return notify_message
     
     try:

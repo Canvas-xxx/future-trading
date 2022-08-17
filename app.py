@@ -201,13 +201,16 @@ def run_ordinary_future_task():
         Signal = find_signal_macd_updown_rf_sign(df_ohlcv)
         message = None
 
+        count = len(df_ohlcv)
+        open_price = df_ohlcv['open'][count - 1]
+
         if Signal  == "Buy_Signal":
             print("BUY-Trade")
-            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get('precision'), 'BUY', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
+            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get('precision'), 'BUY', position_size, stop_loss_percentage, tp_percentage, LEVERAGE, open_price)
           
         elif Signal  == "Sell_Signal":
             print("SELL-Trade")
-            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get('precision'), 'SELL', position_size, stop_loss_percentage, tp_percentage, LEVERAGE)
+            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get('precision'), 'SELL', position_size, stop_loss_percentage, tp_percentage, LEVERAGE, open_price)
     
         else:
             print("Non-Trade")

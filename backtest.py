@@ -462,7 +462,7 @@ def position_backtest_symbol(symbol, notify):
 
     notify_message = None
     if total > 0:
-        notify_message = "\n""### Current Position Backtest ###"
+        notify_message = "\n""### Current Pos. Backtest ###"
         notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
         notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
         notify_message += "\n""Symbol " + str(symbol)
