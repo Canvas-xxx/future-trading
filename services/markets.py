@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+import math
 
 def get_market_list(exchange, type, quote_asset):
     markets = exchange.fetch_markets()
@@ -108,8 +109,18 @@ def create_stop_loss_order(exchange, binance, symbol, precision, side, position_
             stop_loss_percentage = 1 + (stop_loss / 100)
             tp_percentage = 1 - (tp / 100)
             tp_sl_side = "BUY"
+    except:
+        print("Calculate Take Profit/Stop Loss Error")
+        notify_message += "\n""Calculate Take Profit/Stop Loss Error"
 
-        stop_price = round((order_price * stop_loss_percentage), precision['price']) 
+    factor = 10 ** precision['price']
+    try:
+        if side == "BUY":
+            stop_price = math.floor((open_price * stop_loss_percentage) * factor) / factor 
+        else:
+            stop_price = math.ceil((open_price * stop_loss_percentage) * factor) / factor 
+
+        # stop_price = round((order_price * stop_loss_percentage), precision['price']) 
         binance.new_order(symbol=re.sub('/', '', symbol), side=tp_sl_side, type= "STOP_MARKET", quantity= quote_amount, stopPrice=stop_price)
 
         print("Stop Loss Price", stop_price)
@@ -119,7 +130,12 @@ def create_stop_loss_order(exchange, binance, symbol, precision, side, position_
         notify_message += "\n""Stop Loss Error"
 
     try:
-        tp_price = round((order_price * tp_percentage), precision['price']) 
+        if side == "BUY":
+            tp_price = math.floor((open_price * tp_percentage) * factor) / factor 
+        else:
+            tp_price = math.ceil((open_price * tp_percentage) * factor) / factor 
+
+        # tp_price = round((order_price * tp_percentage), precision['price']) 
         binance.new_order(symbol=re.sub('/', '', symbol), side=tp_sl_side, type= "TAKE_PROFIT_MARKET", quantity= quote_amount, stopPrice=tp_price)
 
         print("Take Profit Price", tp_price)
