@@ -287,30 +287,21 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Quater Backtest Stat Schedule
-    scheduler.add_cron_job(schedule_ranking, day="1", hour='2', minute='0', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(schedule_ranking, 'cron', day="1", hour='2', minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_ranking, 'cron', day="1", hour='2', minute='0', second='0', timezone="Africa/Abidjan")
 
     # Backtest Futures Signal
-    scheduler.add_cron_job(backtest_current_positions, hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
-    scheduler.add_cron_job(schedule_backtest_daily, day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_cron_job(schedule_backtest_week, day_of_week="0", hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_cron_job(schedule_backtest_month, day='1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_cron_job(schedule_backtest, day='28', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(schedule_backtest_daily, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(schedule_backtest_week, 'cron', day_of_week="0", hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(schedule_backtest_month, 'cron', day='1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(schedule_backtest, 'cron', day='28', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest_daily, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest_week, 'cron', day_of_week="0", hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest_month, 'cron', day='1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(schedule_backtest, 'cron', day='28', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
-    scheduler.add_cron_job(future_schedule_job, hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
-    scheduler.add_cron_job(clearance_close_positions, hour='*/1', minute='45', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(clearance_close_positions, 'cron', hour='*/1', minute='45', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(clearance_close_positions, 'cron', hour='*/1', minute='45', second='0', timezone="Africa/Abidjan")
 
     ## Update My Trades
-    scheduler.add_cron_job(retreive_my_trades, day='*/1', hour='0', minute='0', second='0', timezone="Africa/Abidjan")
-    # scheduler.add_job(retreive_my_trades, 'cron', day='*/1', hour='0', minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(retreive_my_trades, 'cron', day='*/1', hour='0', minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
