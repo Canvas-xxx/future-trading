@@ -53,6 +53,7 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+.vim
 
 # Translations
 *.mo
@@ -90,12 +91,7 @@ celerybeat-schedule
 
 # Environments
 .venv
-env/
-<<<<<<< HEAD
-=======
-env_/
 env_
->>>>>>> 02cf03a57588d866a0943950e68fd110699d574d
 venv/
 ENV/
 env.bak/
