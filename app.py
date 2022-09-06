@@ -281,6 +281,9 @@ def rebalacing_pair_of_symbol():
 
     print("##########################")
 
+def testing_scheduler():
+    print("Hello World!!")
+
 if __name__ == "__main__":
     print("\n""####### Run Scheduler #####")
     scheduler = BlockingScheduler()
@@ -306,8 +309,10 @@ if __name__ == "__main__":
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
 
+    scheduler.add_job(testing_scheduler, 'cron', second='*/5', timezone="Africa/Abidjan")
+
     try:
-        scheduler.start()
         print("Scheduler Jobs No.", len(scheduler.get_jobs()))
+        scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         pass
