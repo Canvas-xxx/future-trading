@@ -282,30 +282,39 @@ def rebalacing_pair_of_symbol():
     print("##########################")
 
 def scheduler_schedule_ranking():
+    print("Scheduler Job 1.")
     schedule_ranking()
 
 def scheduler_backtest_current_positions():
+    print("Scheduler Job 2.")
     backtest_current_positions()
 
 def scheduler_schedule_backtest_daily():
+    print("Scheduler Job 3.")
     schedule_backtest_daily()
 
 def scheduler_schedule_backtest_week():
+    print("Scheduler Job 4.")
     schedule_backtest_week()
 
 def scheduler_schedule_backtest_month():
+    print("Scheduler Job 5.")
     schedule_backtest_month()
 
 def scheduler_schedule_backtest():
+    print("Scheduler Job 6.")
     schedule_backtest()
 
 def scheduler_future_schedule_job():
+    print("Scheduler Job 7.")
     future_schedule_job()
 
 def scheduler_clearance_close_positions():
+    print("Scheduler Job 8.")
     clearance_close_positions()
 
 def scheduler_retreive_my_trades():
+    print("Scheduler Job 9.")
     retreive_my_trades()
 
 if __name__ == "__main__":
