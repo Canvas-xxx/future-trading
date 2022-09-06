@@ -306,9 +306,8 @@ if __name__ == "__main__":
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
 
-    print("Scheduler Jobs No.", len(scheduler.get_jobs()))
-
     try:
         scheduler.start()
+        print("Scheduler Jobs No.", len(scheduler.get_jobs()))
     except (KeyboardInterrupt, SystemExit):
         pass
