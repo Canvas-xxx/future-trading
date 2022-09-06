@@ -281,9 +281,32 @@ def rebalacing_pair_of_symbol():
 
     print("##########################")
 
-def testing_scheduler():
-    print("Hello World!!")
+def scheduler_schedule_ranking():
+    schedule_ranking()
+
+def scheduler_backtest_current_positions():
     backtest_current_positions()
+
+def scheduler_schedule_backtest_daily():
+    schedule_backtest_daily()
+
+def scheduler_schedule_backtest_week():
+    schedule_backtest_week()
+
+def scheduler_schedule_backtest_month():
+    schedule_backtest_month()
+
+def scheduler_schedule_backtest():
+    schedule_backtest()
+
+def scheduler_future_schedule_job():
+    future_schedule_job()
+
+def scheduler_clearance_close_positions():
+    clearance_close_positions()
+
+def scheduler_retreive_my_trades():
+    retreive_my_trades()
 
 if __name__ == "__main__":
     print("\n""####### Run Scheduler #####")
@@ -291,26 +314,24 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Quater Backtest Stat Schedule
-    scheduler.add_job(schedule_ranking, 'cron', day="1", hour='2', minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_schedule_ranking, 'cron', day="1", hour='2', minute='0', second='0', timezone="Africa/Abidjan")
 
     # Backtest Futures Signal
-    scheduler.add_job(backtest_current_positions, 'cron', hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(schedule_backtest_daily, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(schedule_backtest_week, 'cron', day_of_week="0", hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(schedule_backtest_month, 'cron', day='1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(schedule_backtest, 'cron', day='28', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_backtest_current_positions, 'cron', hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_schedule_backtest_daily, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_schedule_backtest_week, 'cron', day_of_week="0", hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_schedule_backtest_month, 'cron', day='1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_schedule_backtest, 'cron', day='28', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
-    scheduler.add_job(future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(clearance_close_positions, 'cron', hour='*/1', minute='45', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_clearance_close_positions, 'cron', hour='*/1', minute='45', second='0', timezone="Africa/Abidjan")
 
     ## Update My Trades
-    scheduler.add_job(retreive_my_trades, 'cron', day='*/1', hour='0', minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_retreive_my_trades, 'cron', day='*/1', hour='0', minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
-
-    scheduler.add_job(testing_scheduler, 'cron', minute='*/5', timezone="Africa/Abidjan")
 
     try:
         print("Scheduler Jobs No.", len(scheduler.get_jobs()))
