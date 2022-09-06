@@ -283,6 +283,7 @@ def rebalacing_pair_of_symbol():
 
 def testing_scheduler():
     print("Hello World!!")
+    backtest_current_positions()
 
 if __name__ == "__main__":
     print("\n""####### Run Scheduler #####")
