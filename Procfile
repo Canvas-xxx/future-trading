@@ -1,1 +1,0 @@
-schedule: python app.py
