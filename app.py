@@ -309,7 +309,7 @@ if __name__ == "__main__":
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")
 
-    scheduler.add_job(testing_scheduler, 'cron', second='*/5', timezone="Africa/Abidjan")
+    scheduler.add_job(testing_scheduler, 'cron', minute='*/5', timezone="Africa/Abidjan")
 
     try:
         print("Scheduler Jobs No.", len(scheduler.get_jobs()))
