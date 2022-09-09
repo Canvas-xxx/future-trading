@@ -751,18 +751,27 @@ def retreive_my_trades():
         print(market.get('symbol'))
         day = 24 * 60 * 60 * 1000
         # start_time = exchange.parse8601 ('2022-05-30T00:00:00')
+        # now = exchange.milliseconds()
         start_time = exchange.parse8601(
             str(moment.utcnow().subtract(day=1).zero))
-        now = exchange.milliseconds()
+        now = exchange.parse8601(
+            str(moment.utcnow().zero))
+
+        notify_message = ""
 
         while start_time < now:
 
             print('Fetching trades from', exchange.iso8601(start_time))
             end_time = start_time + day
 
-            trades = exchange.fetch_my_trades(market.get('symbol'), start_time, None, {
-                'endTime': end_time,
-            })
+            try:
+                trades = exchange.fetch_my_trades(market.get('symbol'), start_time, None, {
+                    'endTime': end_time,
+                })
+            except:
+                notify_message += str(market.get('symbol')) + ", error get my trades\n"
+                trades = []
+
             if len(trades):
                 last_trade = trades[len(trades) - 1]
                 start_time = last_trade['timestamp'] + 1
