@@ -322,6 +322,7 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler()
     duration = int(TF_DURATION)
 
+
     # Quater Backtest Stat Schedule
     scheduler.add_job(scheduler_schedule_ranking, 'cron', day="1", hour='2', minute='0', second='0', timezone="Africa/Abidjan")
 
