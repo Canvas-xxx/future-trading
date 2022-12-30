@@ -2,14 +2,14 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import ccxt
 import moment
 import pprint36 as pprint
-from pymongo import MongoClient 
+from pymongo import MongoClient
 import settings as ENV
 from binance.futures import Futures as Client
 from services.signal import get_df_ohlcv, find_signal_macd_updown_rf_sign
-from services.wallet_information import get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol 
-from services.markets import set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol 
+from services.wallet_information import get_usdt_balance_in_future_wallet, get_positions_list, get_unit_of_symbol
+from services.markets import set_pair_leverage, create_stop_loss_order, cancel_unused_order, get_average_price_by_symbol
 from services.request import push_notify_message
-from backtest import schedule_backtest, schedule_backtest_month, schedule_backtest_week, schedule_backtest_daily, position_backtest_symbol, retreive_my_trades
+from backtest import schedule_backtest_month, schedule_backtest_week, schedule_backtest_daily, position_backtest_symbol, retreive_my_trades
 from ranking import schedule_ranking
 
 API_KEY = ENV.API_KEY
@@ -31,7 +31,7 @@ FIXIE_URL = ENV.FIXIE_URL
 DATABASE_URL = ENV.DATABASE_URL
 
 exchange = ccxt.binanceusdm({
-    'apiKey': API_READING_KEY, 
+    'apiKey': API_READING_KEY,
     'secret': SECRET_READING_KEY,
     'enableRateLimit': True,
     'options': {
@@ -40,20 +40,25 @@ exchange = ccxt.binanceusdm({
 })
 
 exchange_spot = ccxt.binance({
-    'apiKey': API_READING_KEY, 
+    'apiKey': API_READING_KEY,
     'secret': SECRET_READING_KEY,
     'enableRateLimit': True
 })
 
-client = Client(API_KEY, SECRET_KEY, base_url="https://fapi.binance.com", proxies= {'http': FIXIE_URL, 'https': FIXIE_URL})
+client = Client(API_KEY, SECRET_KEY, base_url="https://fapi.binance.com",
+                proxies={'http': FIXIE_URL, 'https': FIXIE_URL})
 
 client_db = MongoClient(DATABASE_URL)
 symbol_backtest_stat = client_db.binance.symbol_backtest_stat
+position_size_config = client_db.binance.position_size_config
+
 
 def clearance_close_positions():
-    print("############ Cancle Position Schedule(", moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"), ") ############")
+    print("############ Cancle Position Schedule(", moment.utcnow().timezone(
+        "Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"), ") ############")
     positions = get_positions_list(exchange, 'USDT')
     cancel_unused_order(exchange, client, positions, 'future', 'USDT')
+
 
 def backtest_current_positions():
     positions = get_positions_list(exchange, 'USDT')
@@ -62,7 +67,8 @@ def backtest_current_positions():
     for position in positions:
         try:
             symbol = position.get('symbol')
-            total, _, _, win_rate, avg_success_candle, avg_fault_candle, avg_close_candle, current_order_position_date, current_order_position_number = position_backtest_symbol(symbol, False)
+            total, _, _, win_rate, avg_success_candle, avg_fault_candle, avg_close_candle, current_order_position_date, current_order_position_number = position_backtest_symbol(
+                symbol, False)
         except:
             total, win_rate, avg_success_candle, avg_fault_candle, avg_close_candle, current_order_position_date, current_order_position_number = 0, 0, 0, 0, 0, None, 0
 
@@ -89,17 +95,21 @@ def backtest_current_positions():
         for pos in notify_list:
             locale_date = None
             try:
-                locale_date = moment.date(pos.get('current_order_position_date')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm")
+                locale_date = moment.date(pos.get('current_order_position_date')).timezone(
+                    "Asia/Bangkok").format("YYYY-MM-DD HH:mm")
             except Exception as e:
-                print("Error Date: ", e) 
+                print("Error Date: ", e)
 
             notify_message += "\n""Symbol " + str(pos.get('symbol'))
             notify_message += "\n""Totals " + str(pos.get('total'))
-            notify_message += "\n""Win Rate " + str(round(float(pos.get('win_rate')), 2)) + "%"
+            notify_message += "\n""Win Rate " + \
+                str(round(float(pos.get('win_rate')), 2)) + "%"
             # notify_message += "\n""Avg. Success Candle " + str(pos.get('avg_success_candle'))
             # notify_message += "\n""Avg. Fault Candle " + str(pos.get('avg_fault_candle'))
             # notify_message += "\n""Avg. Close Candle " + str(pos.get('avg_close_candle'))
-            notify_message += "\n""Current Position " + str(locale_date) + ", " + str(pos.get('current_order_position_number'))
+            notify_message += "\n""Current Position " + \
+                str(locale_date) + ", " + \
+                str(pos.get('current_order_position_number'))
             notify_message += "\n""------"
             index += 1
             if (index % 8) == 0:
@@ -115,14 +125,18 @@ def backtest_current_positions():
         for pos in notify_unlist:
             locale_date = None
             try:
-                locale_date = moment.date(pos.get('current_order_position_date')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm")
+                locale_date = moment.date(pos.get('current_order_position_date')).timezone(
+                    "Asia/Bangkok").format("YYYY-MM-DD HH:mm")
             except Exception as e:
-                print("Error Date: ", e) 
+                print("Error Date: ", e)
 
             notify_unlist_message += "\n""Symbol " + str(pos.get('symbol'))
             notify_unlist_message += "\n""Totals " + str(pos.get('total'))
-            notify_unlist_message += "\n""Win Rate " + str(round(float(pos.get('win_rate')), 2)) + "%"
-            notify_unlist_message += "\n""Current Position " + str(locale_date) + ", " + str(pos.get('current_order_position_number'))
+            notify_unlist_message += "\n""Win Rate " + \
+                str(round(float(pos.get('win_rate')), 2)) + "%"
+            notify_unlist_message += "\n""Current Position " + \
+                str(locale_date) + ", " + \
+                str(pos.get('current_order_position_number'))
             notify_unlist_message += "\n""------"
             index += 1
             if (index % 8) == 0:
@@ -132,22 +146,24 @@ def backtest_current_positions():
         if len(notify_unlist_message) > 0:
             push_notify_message(LINE_NOTIFY_TOKEN, notify_unlist_message)
 
+
 def future_schedule_job():
-    print("############ Schedule(",moment.utcnow().timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),") ############")
+    print("############ Schedule(", moment.utcnow().timezone(
+        "Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"), ") ############")
     utc = moment.utcnow().zero.date
     now = moment.utcnow().format("HH-mm")
     now_hh = int(now.split('-')[0])
     now_mm = int(now.split('-')[1])
-    
+
     times = 0
     duration = int(TF_DURATION)
     circle = round(24/duration)
     not_yet = True
-    
+
     while not_yet:
         t = moment.date(utc).add(hour=(times*duration)).format("HH-mm")
         t_hh = int(t.split('-')[0])
-        
+
         if now_hh == t_hh and now_mm < 2:
             run_ordinary_future_task()
             not_yet = False
@@ -157,6 +173,7 @@ def future_schedule_job():
                 not_yet = False
 
     print("\n""############ End Schedule ############")
+
 
 def run_ordinary_future_task():
     timeframe = TF_DURATION + TF_UNIT
@@ -172,8 +189,13 @@ def run_ordinary_future_task():
     print("TAKE PROFIT PERCENTAGE", tp_percentage)
 
     print("\n""######################")
-    balance = get_usdt_balance_in_future_wallet(exchange) 
+    balance = get_usdt_balance_in_future_wallet(exchange)
     print("Balance", balance)
+
+    db_position_size_config = position_size_config.aggregate(
+        [{"$sort": {"time": -1}}])
+    FUTURE_POSITION_SIZE = int(list(db_position_size_config)[
+                               0].get('position_size'))
 
     position_size = FUTURE_POSITION_SIZE
     print("Position Size", position_size)
@@ -182,13 +204,16 @@ def run_ordinary_future_task():
 
     print("\n""####### Current Positions List #####")
     positions = get_positions_list(exchange, 'USDT')
-    positions_symbol = list(map(lambda position: position.get('symbol'), positions)) 
+    positions_symbol = list(
+        map(lambda position: position.get('symbol'), positions))
     pprint.pprint(positions_symbol)
     print("##########################")
 
-    db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
+    db_markets = symbol_backtest_stat.aggregate(
+        [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
-    none_position_market = list(filter(lambda market: market.get('symbol') not in positions_symbol, markets))
+    none_position_market = list(
+        filter(lambda market: market.get('symbol') not in positions_symbol, markets))
 
     print("\n""####### Trade Status #####")
     index = 1
@@ -197,21 +222,24 @@ def run_ordinary_future_task():
         set_pair_leverage(client, market.get('symbol'), leverage)
 
         print("Symbol", index, market.get('symbol'))
-        df_ohlcv = get_df_ohlcv(exchange, market.get('symbol'), timeframe, limit)
+        df_ohlcv = get_df_ohlcv(
+            exchange, market.get('symbol'), timeframe, limit)
         Signal = find_signal_macd_updown_rf_sign(df_ohlcv)
         message = None
 
         count = len(df_ohlcv)
         open_price = df_ohlcv['open'][count - 1]
 
-        if Signal  == "Buy_Signal":
+        if Signal == "Buy_Signal":
             print("BUY-Trade")
-            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get('precision'), 'BUY', position_size, stop_loss_percentage, tp_percentage, LEVERAGE, open_price)
-          
-        elif Signal  == "Sell_Signal":
+            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get(
+                'precision'), 'BUY', position_size, stop_loss_percentage, tp_percentage, LEVERAGE, open_price)
+
+        elif Signal == "Sell_Signal":
             print("SELL-Trade")
-            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get('precision'), 'SELL', position_size, stop_loss_percentage, tp_percentage, LEVERAGE, open_price)
-    
+            message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get(
+                'precision'), 'SELL', position_size, stop_loss_percentage, tp_percentage, LEVERAGE, open_price)
+
         else:
             print("Non-Trade")
 
@@ -221,6 +249,7 @@ def run_ordinary_future_task():
         print("---------------------------------")
 
     print("##########################")
+
 
 def rebalacing_pair_of_symbol():
     print("\n""######## Rebalancing Schedule ##########")
@@ -244,8 +273,10 @@ def rebalacing_pair_of_symbol():
 
     side = None
     diff_value = 0
-    rebalance_mark_sell = rebalance_mark + (rebalance_mark * rebalance_percentage / 100)
-    rebalance_mark_buy = rebalance_mark - (rebalance_mark * rebalance_percentage / 100)
+    rebalance_mark_sell = rebalance_mark + \
+        (rebalance_mark * rebalance_percentage / 100)
+    rebalance_mark_buy = rebalance_mark - \
+        (rebalance_mark * rebalance_percentage / 100)
     print("Rebalance Mark Sell", rebalance_mark_sell)
     print("Rebalance Mark Buy", rebalance_mark_buy)
 
@@ -258,64 +289,70 @@ def rebalacing_pair_of_symbol():
         diff_value = rebalance_mark - coin_value
         diff_value = diff_value / 2
 
-
     if side != None and fiat_unit > 0:
         print(side, pair_trade, 'Amount', (diff_value / average))
-        message = "\n""### Rebalancing Trigger ###" 
+        message = "\n""### Rebalancing Trigger ###"
         message += "\n""Symbol " + pair_trade
         message += "\n""Coin Unit " + str(coin_unit)
         message += "\n""Fiat Unit " + str(fiat_unit)
         message += "\n""Coin Value " + str(coin_value)
         message += "\n""Rebalance Mark Sell " + str(rebalance_mark_sell)
-        message += "\n""Rebalance Mark Buy " + str(rebalance_mark_buy) 
+        message += "\n""Rebalance Mark Buy " + str(rebalance_mark_buy)
 
         try:
-            exchange_spot.create_order(pair_trade, 'market', side, (diff_value/average))
-            message += "\n" + str(side).upper() + " at " + str(average) + " for " + str(diff_value/average)
+            exchange_spot.create_order(
+                pair_trade, 'market', side, (diff_value/average))
+            message += "\n" + str(side).upper() + " at " + \
+                str(average) + " for " + str(diff_value/average)
         except:
             print("Coin Less Than Min Limitation")
             message += "\n""Coin Less Than Min Limitation"
 
-        message += "\n""#######################" 
+        message += "\n""#######################"
         push_notify_message(LINE_NOTIFY_TOKEN, message)
 
     print("##########################")
 
+
 def scheduler_schedule_ranking():
-    print("Scheduler Job 1.")
+    print("Scheduler Job:: Ranking")
     schedule_ranking()
 
+
 def scheduler_backtest_current_positions():
-    print("Scheduler Job 2.")
+    print("Scheduler Job:: Current Position Backtest")
     backtest_current_positions()
 
+
 def scheduler_schedule_backtest_daily():
-    print("Scheduler Job 3.")
+    print("Scheduler Job:: Daily Backtest")
     schedule_backtest_daily()
 
+
 def scheduler_schedule_backtest_week():
-    print("Scheduler Job 4.")
+    print("Scheduler Job:: Week Backtest")
     schedule_backtest_week()
 
+
 def scheduler_schedule_backtest_month():
-    print("Scheduler Job 5.")
+    print("Scheduler Job:: Month Backtest")
     schedule_backtest_month()
 
-def scheduler_schedule_backtest():
-    print("Scheduler Job 6.")
-    schedule_backtest()
 
 def scheduler_future_schedule_job():
-    print("Scheduler Job 7.")
+    print("Scheduler Job:: Signal Detect")
     future_schedule_job()
 
+
 def scheduler_clearance_close_positions():
-    print("Scheduler Job 8.")
+    print("Scheduler Job:: Clear Closed Position")
     clearance_close_positions()
 
+
 def scheduler_retreive_my_trades():
-    print("Scheduler Job 9.")
+    print("Scheduler Job:: Get My Trades")
     retreive_my_trades()
+
 
 if __name__ == "__main__":
     print("\n""####### Run Scheduler #####")
@@ -323,21 +360,28 @@ if __name__ == "__main__":
     duration = int(TF_DURATION)
 
     # Quater Backtest Stat Schedule
-    scheduler.add_job(scheduler_schedule_ranking, 'cron', day="1", hour='2', minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_schedule_ranking, 'cron', day="1",
+                      hour='2', minute='0', second='0', timezone="Africa/Abidjan")
 
     # Backtest Futures Signal
-    scheduler.add_job(scheduler_backtest_current_positions, 'cron', hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(scheduler_schedule_backtest_daily, 'cron', day='*/1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(scheduler_schedule_backtest_week, 'cron', day_of_week="0", hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(scheduler_schedule_backtest_month, 'cron', day='1', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(scheduler_schedule_backtest, 'cron', day='28', hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_backtest_current_positions, 'cron',
+                      hour='*/1', minute='10', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_schedule_backtest_daily, 'cron', day='*/1',
+                      hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_schedule_backtest_week, 'cron', day_of_week="0",
+                      hour='0', minute='5', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_schedule_backtest_month, 'cron', day='1',
+                      hour='0', minute='5', second='0', timezone="Africa/Abidjan")
 
     # Futures Trading Schedule
-    scheduler.add_job(scheduler_future_schedule_job, 'cron', hour='*/' + str(duration), minute='0', second='0', timezone="Africa/Abidjan")
-    scheduler.add_job(scheduler_clearance_close_positions, 'cron', hour='*/1', minute='45', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_future_schedule_job, 'cron', hour='*/' +
+                      str(duration), minute='0', second='0', timezone="Africa/Abidjan")
+    scheduler.add_job(scheduler_clearance_close_positions, 'cron',
+                      hour='*/1', minute='45', second='0', timezone="Africa/Abidjan")
 
-    ## Update My Trades
-    scheduler.add_job(scheduler_retreive_my_trades, 'cron', day='*/1', hour='0', minute='0', second='0', timezone="Africa/Abidjan")
+    # Update My Trades
+    scheduler.add_job(scheduler_retreive_my_trades, 'cron', day='*/1',
+                      hour='0', minute='0', second='0', timezone="Africa/Abidjan")
 
     # Spots Rebalancing Schedule
     # scheduler.add_job(rebalacing_pair_of_symbol, 'cron', minute='*/30', second='0', timezone="Africa/Abidjan")

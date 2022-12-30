@@ -3,9 +3,11 @@ import settings as ENV
 import moment
 import math
 import pymongo
+from datetime import timezone, datetime
 from services.markets import get_market_list
 from services.request import push_notify_message
 from services.signal import get_df_ohlcv, find_signal_macd_updown_rf_sign
+from services.wallet_information import get_usdt_balance_in_future_wallet
 
 API_READING_KEY = ENV.API_READING_KEY
 SECRET_READING_KEY = ENV.SECRET_READING_KEY
@@ -31,127 +33,18 @@ exchange = ccxt.binanceusdm({
 client = pymongo.MongoClient(DATABASE_URL)
 symbol_backtest_stat = client.binance.symbol_backtest_stat
 my_trades = client.binance.my_trades
-
-
-def schedule_backtest():
-    db_markets = symbol_backtest_stat.aggregate(
-        [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
-    markets = list(db_markets)
-
-    summary_total = 0
-    summary_success = 0
-    summary_fail = 0
-    orders_date_list = []
-    orders_date_dict = {}
-    count_success_position = 0
-    count_fail_position = 0
-    count_has_position_symbol = 0
-    avg_success_candle = 0
-    avg_fault_candle = 0
-    avg_all_symbol_close_candle = 0
-
-    for market in markets:
-        try:
-            total, success, fail, orders_inform_list, avg_close_candle, _, _ = backtest_symbol(
-                market.get('symbol'), BACK_TEST_LIMIT)
-        except:
-            total, success, fail, orders_inform_list, avg_close_candle = 0, 0, 0, [], 0
-
-        summary_total += total
-        summary_success += success
-        summary_fail += fail
-        orders_date_list += list(
-            map(lambda order_inform: order_inform.get("datetime"), orders_inform_list))
-        if total > 0:
-            count_has_position_symbol += 1
-            avg_all_symbol_close_candle += avg_close_candle
-            for order_inform in orders_inform_list:
-                st = order_inform.get("state")
-                cd = order_inform.get("candle")
-                if st == "S":
-                    count_success_position += 1
-                    avg_success_candle += cd
-                else:
-                    count_fail_position += 1
-                    avg_fault_candle += cd
-
-    notify_message = None
-    if summary_total > 0:
-        orders_date_list.sort()
-        orders_date_list = list(map(lambda order_d: moment.utc(
-            order_d).format("YYYY-MM-DD"), orders_date_list))
-        orders_date_dict = {i: orders_date_list.count(
-            i) for i in orders_date_list}
-
-        high_same_day_orders = 0
-        for date in orders_date_dict.keys():
-            if orders_date_dict[date] > high_same_day_orders:
-                high_same_day_orders = orders_date_dict[date]
-
-        if avg_success_candle > 0:
-            avg_success_candle = math.ceil(
-                avg_success_candle / count_success_position)
-        if avg_fault_candle > 0:
-            avg_fault_candle = math.ceil(
-                avg_fault_candle / count_fail_position)
-        if avg_all_symbol_close_candle > 0:
-            avg_all_symbol_close_candle = math.ceil(
-                avg_all_symbol_close_candle / count_has_position_symbol)
-
-        notify_message = "\n""### Backtest Schedule ###"
-        notify_message += "\n""Take Profit Percentage " + str(TP_PERCENTAGE)
-        notify_message += "\n""Stop Loss Percentage " + str(SL_PERCENTAGE)
-        notify_message += "\n""Start Order At " + str(orders_date_list[0])
-        notify_message += "\n""Maximum Number of Positions " + \
-            str(high_same_day_orders) + "\n"
-        notify_message += "\n""Total Signal " + str(summary_total)
-        notify_message += "\n""Success Signal " + str(summary_success)
-        notify_message += "\n""Fault Signal " + str(summary_fail)
-        notify_message += "\n""Avg. Success Candle " + str(avg_success_candle)
-        notify_message += "\n""Avg. Fault Candle " + str(avg_fault_candle)
-        notify_message += "\n""Avg. Close Position Candle " + \
-            str(avg_all_symbol_close_candle)
-        try:
-            win_rate = (summary_success / summary_total) * 100
-        except:
-            win_rate = 0
-        notify_message += "\n""Win Rate " + str(win_rate) + "%"
-
-        try:
-            summary_profit = ((TP_PERCENTAGE * summary_success) -
-                              (SL_PERCENTAGE * summary_fail)) * LEVERAGE
-            realized_pnl = (summary_profit / 100) * FUTURE_POSITION_SIZE
-        except:
-            summary_profit = 0
-            realized_pnl = 0
-        notify_message += "\n""Summary Profit Percentage " + \
-            str(summary_profit) + "%"
-        notify_message += "\n""Realized PNL " + str(realized_pnl) + "USDT"
-
-        try:
-            start_time = exchange.parse8601(
-                str(orders_date_list[0]) + "T00:00:00")
-            my_trades_list = my_trades.aggregate([{"$sort": {"datetime": -1}}])
-            my_trades_list = list(filter(lambda x: x.get(
-                'time') >= start_time, my_trades_list))
-            reality_pnl = 0
-
-            for my_trade in my_trades_list:
-                reality_pnl += float(my_trade.get('realizedPnl'))
-        except:
-            reality_pnl = 0
-        reality_pnl = round(reality_pnl)
-        notify_message += "\n""Reality PNL " + str(reality_pnl) + "USDT"
-        notify_message += "\n""#####################"
-
-    if notify_message != None:
-        push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
+position_size_config = client.binance.position_size_config
 
 
 def schedule_backtest_month():
     db_markets = symbol_backtest_stat.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
+
+    db_position_size_config = position_size_config.aggregate(
+        [{"$sort": {"time": -1}}])
+    FUTURE_POSITION_SIZE = int(list(db_position_size_config)[
+                               0].get('position_size'))
 
     summary_total = 0
     summary_success = 0
@@ -218,6 +111,16 @@ def schedule_backtest_month():
         except:
             reality_pnl_month_ago = 0
 
+        wallet_balance = get_usdt_balance_in_future_wallet(exchange)
+        timestamp = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
+        date_time = moment.unix(timestamp, utc=True).timezone(
+            "Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss")
+        position_sizing = wallet_balance / \
+            (count_30_days_success_position + count_30_days_fail_position)
+
+        position_size_config.insert_one(
+            {'wallet_balance': wallet_balance, 'position_size': round(position_sizing), 'datetime': date_time, 'time': timestamp})
+
         notify_message += "\n""Success Signal(30 Days) " + \
             str(count_30_days_success_position)
         notify_message += "\n""Fault Signal(30 Days) " + \
@@ -229,6 +132,8 @@ def schedule_backtest_month():
         reality_pnl_month_ago = round(reality_pnl_month_ago)
         notify_message += "\n""Reality PNL(30 Days) " + \
             str(reality_pnl_month_ago) + "USDT"
+        notify_message += "\n""Updated Position Size " + \
+            str(round(position_sizing)) + " USDT"
 
         notify_message += "\n""#####################"
 
@@ -240,6 +145,11 @@ def schedule_backtest_week():
     db_markets = symbol_backtest_stat.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
+
+    db_position_size_config = position_size_config.aggregate(
+        [{"$sort": {"time": -1}}])
+    FUTURE_POSITION_SIZE = int(list(db_position_size_config)[
+                               0].get('position_size'))
 
     summary_total = 0
     summary_success = 0
@@ -272,10 +182,12 @@ def schedule_backtest_week():
                 if order_time >= week_ago:
                     if st == "S":
                         count_7_days_success_position += 1
-                        symbols_success.append({'symbol': market.get("symbol"), 'side': order_inform.get('side')})
+                        symbols_success.append({'symbol': market.get(
+                            "symbol"), 'side': order_inform.get('side')})
                     else:
                         count_7_days_fail_position += 1
-                        symbols_fail.append({'symbol': market.get("symbol"), 'side': order_inform.get('side')})
+                        symbols_fail.append({'symbol': market.get(
+                            "symbol"), 'side': order_inform.get('side')})
 
     notify_message = None
     if summary_total > 0:
@@ -307,11 +219,12 @@ def schedule_backtest_week():
 
             for my_trade in my_trades_list:
                 if my_trade.get('time') >= week_ago:
-                    realizedPnl = float(my_trade.get('realizedPnl')) 
+                    realizedPnl = float(my_trade.get('realizedPnl'))
                     reality_pnl_week_ago += realizedPnl
                     if realizedPnl != float(0.0):
                         if not my_trade.get('symbol') in realize_trade_symbols:
-                            realize_trade_symbols.append(my_trade.get('symbol'))
+                            realize_trade_symbols.append(
+                                my_trade.get('symbol'))
         except:
             reality_pnl_week_ago = 0
 
@@ -330,10 +243,12 @@ def schedule_backtest_week():
         notify_message += "\n""Exclude Symbols(7 Days)"
         for symbol in symbols_success:
             if not symbol.get('symbol') in realize_trade_symbols:
-                notify_message += "\n""- " + symbol.get('side') + " " + symbol.get('symbol') + "(S)"
+                notify_message += "\n""- " + \
+                    symbol.get('side') + " " + symbol.get('symbol') + "(S)"
         for symbol in symbols_fail:
             if not symbol.get('symbol') in realize_trade_symbols:
-                notify_message += "\n""- " + symbol.get('side') + " " + symbol.get('symbol') + "(F)"
+                notify_message += "\n""- " + \
+                    symbol.get('side') + " " + symbol.get('symbol') + "(F)"
 
         notify_message += "\n""#####################"
 
@@ -345,6 +260,11 @@ def schedule_backtest_daily():
     db_markets = symbol_backtest_stat.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
+
+    db_position_size_config = position_size_config.aggregate(
+        [{"$sort": {"time": -1}}])
+    FUTURE_POSITION_SIZE = int(list(db_position_size_config)[
+                               0].get('position_size'))
 
     summary_total = 0
     summary_success = 0
@@ -377,10 +297,12 @@ def schedule_backtest_daily():
                 if order_time >= daily_ago:
                     if st == "S":
                         count_1_days_success_position += 1
-                        symbols_success.append({'symbol': market.get("symbol"), 'side': order_inform.get('side')})
+                        symbols_success.append({'symbol': market.get(
+                            "symbol"), 'side': order_inform.get('side')})
                     else:
                         count_1_days_fail_position += 1
-                        symbols_fail.append({'symbol': market.get("symbol"), 'side': order_inform.get('side')})
+                        symbols_fail.append({'symbol': market.get(
+                            "symbol"), 'side': order_inform.get('side')})
 
     notify_message = None
     if summary_total > 0:
@@ -412,11 +334,12 @@ def schedule_backtest_daily():
 
             for my_trade in my_trades_list:
                 if my_trade.get('time') >= daily_ago:
-                    realizedPnl = float(my_trade.get('realizedPnl')) 
+                    realizedPnl = float(my_trade.get('realizedPnl'))
                     reality_pnl_daily_ago += realizedPnl
                     if realizedPnl != float(0.0):
                         if not my_trade.get('symbol') in realize_trade_symbols:
-                            realize_trade_symbols.append(my_trade.get('symbol'))
+                            realize_trade_symbols.append(
+                                my_trade.get('symbol'))
         except:
             reality_pnl_daily_ago = 0
 
@@ -435,10 +358,12 @@ def schedule_backtest_daily():
         notify_message += "\n""Exclude Symbols(1 Days)"
         for symbol in symbols_success:
             if not symbol.get('symbol') in realize_trade_symbols:
-                notify_message += "\n""- " + symbol.get('side') + " " + symbol.get('symbol') + "(S)"
+                notify_message += "\n""- " + \
+                    symbol.get('side') + " " + symbol.get('symbol') + "(S)"
         for symbol in symbols_fail:
             if not symbol.get('symbol') in realize_trade_symbols:
-                notify_message += "\n""- " + symbol.get('side') + " " + symbol.get('symbol') + "(F)"
+                notify_message += "\n""- " + \
+                    symbol.get('side') + " " + symbol.get('symbol') + "(F)"
 
         notify_message += "\n""#####################"
 
@@ -769,7 +694,8 @@ def retreive_my_trades():
                     'endTime': end_time,
                 })
             except:
-                notify_message += str(market.get('symbol')) + ", error get my trades\n"
+                notify_message += str(market.get('symbol')) + \
+                    ", error get my trades\n"
                 trades = []
 
             if len(trades):
@@ -808,8 +734,3 @@ def retreive_my_trades():
 
 if __name__ == "__main__":
     print("\n""####### Run Back Test #####")
-
-    try:
-        schedule_backtest()
-    except (KeyboardInterrupt, SystemExit):
-        pass
