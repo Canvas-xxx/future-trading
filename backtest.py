@@ -446,6 +446,17 @@ def backtest_symbol(symbol, back_test_limit):
 
     df_ohlcv = get_df_ohlcv(exchange, symbol, timeframe, limit)
 
+    if df_ohlcv.empty:
+        return {
+            "symbol": symbol,
+            "total_signal": 0,
+            "success_signal": 0,
+            "fail_signal": 0,
+            "orders_inform_list": [],
+            "count_has_position_symbol": 0,
+            "avg_close_candle": 0,
+        }
+
     total_signal = 0
     success_signal = 0
     fail_signal = 0
@@ -474,9 +485,9 @@ def backtest_symbol(symbol, back_test_limit):
     while index < count:
         df_ohlcv_range = df_ohlcv[0:index]
 
-        if signal == None:
+        if signal is None:
             s = find_signal_macd_updown_rf_sign(df_ohlcv_range)
-            if s == "Buy_Signal" or s == "Sell_Signal":
+            if s in {"Buy_Signal", "Sell_Signal"}:
                 datetime = df_ohlcv['datetime'][index-1]
                 end_datetime = df_ohlcv['datetime'][index-1]
                 position_price = df_ohlcv['open'][index-1]
@@ -667,16 +678,15 @@ def backtest_symbol(symbol, back_test_limit):
 
 
 def retreive_my_trades():
+    # For mock up markets markets = [{'symbol': 'BTC/USDT'}]
     markets = get_market_list(exchange, 'future', 'USDT')
-    # markets = [{'symbol': 'BTC/USDT'}]
 
     all_trades = []
     for market in markets:
         print('------------------------------------------------------------------')
         print(market.get('symbol'))
         day = 24 * 60 * 60 * 1000
-        # start_time = exchange.parse8601 ('2022-05-30T00:00:00')
-        # now = exchange.milliseconds()
+        #  For mock up start_time exchange.parse8601 ('2022-05-30T00:00:00')
         start_time = exchange.parse8601(
             str(moment.utcnow().subtract(day=1).zero))
         now = exchange.parse8601(
@@ -698,34 +708,34 @@ def retreive_my_trades():
                     ", error get my trades\n"
                 trades = []
 
-            if len(trades):
-                last_trade = trades[len(trades) - 1]
+            if trades:
+                last_trade = trades[-1]
                 start_time = last_trade['timestamp'] + 1
-                trades = list(map(lambda x: {
-                    'id': x.get('id'),
-                    'order': x.get('order'),
-                    'symbol': market.get('symbol'),
-                    'side': x.get('info').get('side'),
-                    'price': x.get('price'),
-                    'commission': x.get('info').get('commission'),
-                    'realizedPnl': x.get('info').get('realizedPnl'),
-                    'time': int(x.get('info').get('time')),
-                    'datetime': moment.date(x.get('info').get('time')).timezone("Asia/Bangkok").format('YYYY-MM-DD hh:mm:ss')
-                }, trades))
-                all_trades = all_trades + trades
+                all_trades.extend(
+                    [{
+                        'id': x.get('id'),
+                        'order': x.get('order'),
+                        'symbol': market.get('symbol'),
+                        'side': x.get('info').get('side'),
+                        'price': x.get('price'),
+                        'commission': x.get('info').get('commission'),
+                        'realizedPnl': x.get('info').get('realizedPnl'),
+                        'time': int(x.get('info').get('time')),
+                        'datetime': moment.date(x.get('info').get('time')).timezone("Asia/Bangkok").format('YYYY-MM-DD hh:mm:ss')
+                    } for x in trades]
+                )
             else:
                 start_time = end_time
 
     olds_data = my_trades.aggregate([{"$sort": {"datetime": -1}}])
-    olds_data = list(
-        sorted(olds_data, key=lambda x: (x['time']), reverse=True))
+    olds_data = sorted(olds_data, key=lambda x: x['time'], reverse=True)
 
-    if len(all_trades):
+    if all_trades:
         try:
-            all_trades = list(
-                sorted(all_trades, key=lambda x: (x['time']), reverse=True))
+            all_trades = sorted(
+                all_trades, key=lambda x: x['time'], reverse=True)
+            all_trades.extend(olds_data)
             my_trades.drop()
-            all_trades = all_trades + olds_data
             my_trades.insert_many(all_trades)
             print("Update My Trades")
         except:
