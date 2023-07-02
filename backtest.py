@@ -34,6 +34,7 @@ client = pymongo.MongoClient(DATABASE_URL)
 symbol_backtest_stat = client.binance.symbol_backtest_stat
 my_trades = client.binance.my_trades
 position_size_config = client.binance.position_size_config
+dialy_logs = client.binance.dialy_logs
 
 
 def schedule_backtest_month():
@@ -349,15 +350,24 @@ def schedule_backtest_daily():
                         symbols_success.append({
                             'symbol': market.get("symbol"),
                             'order_time': moment.date(order_inform.get('datetime')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'end_time': moment.unix(order_time).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
                             'side': order_inform.get('side'),
+                            'timestamp': order_time
                         })
                     else:
                         count_1_days_fail_position += 1
                         symbols_fail.append({
                             'symbol': market.get("symbol"),
                             'order_time': moment.date(order_inform.get('datetime')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'end_time': moment.unix(order_time).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
                             'side': order_inform.get('side'),
+                            'timestamp': order_time
                         })
+
+    if symbols_success:
+        dialy_logs.insert_many(symbols_success)
+    if symbols_fail:
+        dialy_logs.insert_many(symbols_fail)
 
     notify_message = None
     if summary_total > 0:
@@ -808,3 +818,4 @@ def retreive_my_trades():
 
 if __name__ == "__main__":
     print("\n""####### Run Back Test #####")
+    schedule_backtest_week()
