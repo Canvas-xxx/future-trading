@@ -34,12 +34,14 @@ client = pymongo.MongoClient(DATABASE_URL)
 symbol_backtest_stat = client.binance.symbol_backtest_stat
 my_trades = client.binance.my_trades
 position_size_config = client.binance.position_size_config
+dialy_logs = client.binance.dialy_logs
 
 
 def schedule_backtest_month():
     db_markets = symbol_backtest_stat.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
+    symbols_list = list(map(lambda market: market.get('symbol'), markets))
 
     db_position_size_config = position_size_config.aggregate(
         [{"$sort": {"time": -1}}])
@@ -51,7 +53,9 @@ def schedule_backtest_month():
     orders_date_list = []
 
     count_30_days_success_position = 0
+    symbols_success = []
     count_30_days_fail_position = 0
+    symbols_fail = []
     month_ago = exchange.parse8601(str(moment.utcnow().subtract(month=1).zero))
 
     for market in markets:
@@ -75,8 +79,18 @@ def schedule_backtest_month():
                 if order_time >= month_ago:
                     if st == "S":
                         count_30_days_success_position += 1
+                        symbols_success.append({
+                            'symbol': market.get("symbol"),
+                            'order_time': moment.date(order_inform.get('datetime')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'side': order_inform.get('side'),
+                        })
                     else:
                         count_30_days_fail_position += 1
+                        symbols_fail.append({
+                            'symbol': market.get("symbol"),
+                            'order_time': moment.date(order_inform.get('datetime')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'side': order_inform.get('side'),
+                        })
 
     notify_message = None
     if summary_total > 0:
@@ -97,6 +111,7 @@ def schedule_backtest_month():
             summary_profit_month_ago = 0
             realized_pnl_month_ago = 0
 
+        realize_trade_symbols = []
         try:
             start_time = exchange.parse8601(
                 str(orders_date_list[0]) + "T00:00:00")
@@ -107,7 +122,12 @@ def schedule_backtest_month():
 
             for my_trade in my_trades_list:
                 if my_trade.get('time') >= month_ago:
-                    reality_pnl_month_ago += float(my_trade.get('realizedPnl'))
+                    realizedPnl = float(my_trade.get('realizedPnl'))
+                    reality_pnl_month_ago += realizedPnl
+                    if realizedPnl != float(0.0):
+                        if not my_trade.get('symbol') in realize_trade_symbols:
+                            realize_trade_symbols.append(
+                                my_trade.get('symbol'))
         except:
             reality_pnl_month_ago = 0
 
@@ -135,6 +155,22 @@ def schedule_backtest_month():
         notify_message += "\n""Updated Position Size " + \
             str(round(position_sizing)) + " USDT"
 
+        notify_message += "\n""Exclude Symbols(30 Days)"
+        for symbol in symbols_success:
+            if not symbol.get('symbol') in realize_trade_symbols:
+                notify_message += "\n""- " + \
+                    symbol.get('side') + " " + symbol.get('symbol') + \
+                    "(S) " + symbol.get('order_time')
+                if not symbol.get('symbol') in symbols_list:
+                    notify += " (not targeted)"
+        for symbol in symbols_fail:
+            if not symbol.get('symbol') in realize_trade_symbols:
+                notify_message += "\n""- " + \
+                    symbol.get('side') + " " + symbol.get('symbol') + \
+                    "(F) " + symbol.get('order_time')
+                if not symbol.get('symbol') in symbols_list:
+                    notify += " (not targeted)"
+
         notify_message += "\n""#####################"
 
     if notify_message != None:
@@ -145,6 +181,7 @@ def schedule_backtest_week():
     db_markets = symbol_backtest_stat.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
+    symbols_list = list(map(lambda market: market.get('symbol'), markets))
 
     db_position_size_config = position_size_config.aggregate(
         [{"$sort": {"time": -1}}])
@@ -182,12 +219,18 @@ def schedule_backtest_week():
                 if order_time >= week_ago:
                     if st == "S":
                         count_7_days_success_position += 1
-                        symbols_success.append({'symbol': market.get(
-                            "symbol"), 'side': order_inform.get('side')})
+                        symbols_success.append({
+                            'symbol': market.get("symbol"),
+                            'order_time': moment.date(order_inform.get('datetime')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'side': order_inform.get('side'),
+                        })
                     else:
                         count_7_days_fail_position += 1
-                        symbols_fail.append({'symbol': market.get(
-                            "symbol"), 'side': order_inform.get('side')})
+                        symbols_fail.append({
+                            'symbol': market.get("symbol"),
+                            'order_time': moment.date(order_inform.get('datetime')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'side': order_inform.get('side'),
+                        })
 
     notify_message = None
     if summary_total > 0:
@@ -244,11 +287,17 @@ def schedule_backtest_week():
         for symbol in symbols_success:
             if not symbol.get('symbol') in realize_trade_symbols:
                 notify_message += "\n""- " + \
-                    symbol.get('side') + " " + symbol.get('symbol') + "(S)"
+                    symbol.get('side') + " " + symbol.get('symbol') + \
+                    "(S) " + symbol.get('order_time')
+                if not symbol.get('symbol') in symbols_list:
+                    notify += " (not targeted)"
         for symbol in symbols_fail:
             if not symbol.get('symbol') in realize_trade_symbols:
                 notify_message += "\n""- " + \
-                    symbol.get('side') + " " + symbol.get('symbol') + "(F)"
+                    symbol.get('side') + " " + symbol.get('symbol') + \
+                    "(F) " + symbol.get('order_time')
+                if not symbol.get('symbol') in symbols_list:
+                    notify += " (not targeted)"
 
         notify_message += "\n""#####################"
 
@@ -260,6 +309,7 @@ def schedule_backtest_daily():
     db_markets = symbol_backtest_stat.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
+    symbols_list = list(map(lambda market: market.get('symbol'), markets))
 
     db_position_size_config = position_size_config.aggregate(
         [{"$sort": {"time": -1}}])
@@ -297,12 +347,27 @@ def schedule_backtest_daily():
                 if order_time >= daily_ago:
                     if st == "S":
                         count_1_days_success_position += 1
-                        symbols_success.append({'symbol': market.get(
-                            "symbol"), 'side': order_inform.get('side')})
+                        symbols_success.append({
+                            'symbol': market.get("symbol"),
+                            'order_time': moment.date(order_inform.get('datetime')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'end_time': moment.unix(order_time).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'side': order_inform.get('side'),
+                            'timestamp': order_time
+                        })
                     else:
                         count_1_days_fail_position += 1
-                        symbols_fail.append({'symbol': market.get(
-                            "symbol"), 'side': order_inform.get('side')})
+                        symbols_fail.append({
+                            'symbol': market.get("symbol"),
+                            'order_time': moment.date(order_inform.get('datetime')).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'end_time': moment.unix(order_time).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+                            'side': order_inform.get('side'),
+                            'timestamp': order_time
+                        })
+
+    if symbols_success:
+        dialy_logs.insert_many(symbols_success)
+    if symbols_fail:
+        dialy_logs.insert_many(symbols_fail)
 
     notify_message = None
     if summary_total > 0:
@@ -356,14 +421,23 @@ def schedule_backtest_daily():
             str(reality_pnl_daily_ago) + "USDT"
 
         notify_message += "\n""Exclude Symbols(1 Days)"
+        print("######################################################")
         for symbol in symbols_success:
+            print("Order Time " + symbol.get('order_time'))
             if not symbol.get('symbol') in realize_trade_symbols:
                 notify_message += "\n""- " + \
-                    symbol.get('side') + " " + symbol.get('symbol') + "(S)"
+                    symbol.get('side') + " " + symbol.get('symbol') + \
+                    "(S) " + symbol.get('order_time')
+                if not symbol.get('symbol') in symbols_list:
+                    notify += " (not targeted)"
         for symbol in symbols_fail:
+            print("Order Time " + symbol.get('order_time'))
             if not symbol.get('symbol') in realize_trade_symbols:
                 notify_message += "\n""- " + \
-                    symbol.get('side') + " " + symbol.get('symbol') + "(F)"
+                    symbol.get('side') + " " + symbol.get('symbol') + \
+                    "(F) " + symbol.get('order_time')
+                if not symbol.get('symbol') in symbols_list:
+                    notify += " (not targeted)"
 
         notify_message += "\n""#####################"
 
@@ -727,15 +801,15 @@ def retreive_my_trades():
             else:
                 start_time = end_time
 
-    olds_data = my_trades.aggregate([{"$sort": {"datetime": -1}}])
-    olds_data = sorted(olds_data, key=lambda x: x['time'], reverse=True)
+    # olds_data = my_trades.aggregate([{"$sort": {"datetime": -1}}])
+    # olds_data = sorted(olds_data, key=lambda x: x['time'], reverse=True)
 
     if all_trades:
         try:
             all_trades = sorted(
                 all_trades, key=lambda x: x['time'], reverse=True)
-            all_trades.extend(olds_data)
-            my_trades.drop()
+            # all_trades.extend(olds_data)
+            # my_trades.drop()
             my_trades.insert_many(all_trades)
             print("Update My Trades")
         except:
@@ -744,3 +818,4 @@ def retreive_my_trades():
 
 if __name__ == "__main__":
     print("\n""####### Run Back Test #####")
+    schedule_backtest_week()

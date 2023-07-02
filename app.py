@@ -1,6 +1,7 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 import ccxt
 import moment
+import time
 import pprint36 as pprint
 from pymongo import MongoClient
 import settings as ENV
@@ -51,6 +52,7 @@ client = Client(API_KEY, SECRET_KEY, base_url="https://fapi.binance.com",
 client_db = MongoClient(DATABASE_URL)
 symbol_backtest_stat = client_db.binance.symbol_backtest_stat
 position_size_config = client_db.binance.position_size_config
+signal_logs = client_db.binance.signal_logs
 
 
 def clearance_close_positions():
@@ -215,6 +217,8 @@ def run_ordinary_future_task():
     none_position_market = list(
         filter(lambda market: market.get('symbol') not in positions_symbol, markets))
 
+    logs = []
+
     print("\n""####### Trade Status #####")
     index = 1
     for market in none_position_market:
@@ -230,6 +234,15 @@ def run_ordinary_future_task():
         count = len(df_ohlcv)
         open_price = df_ohlcv['open'][count - 1]
 
+        now = int(time.time()) 
+        logs.append({
+            'symbol': market.get('symbol'),
+            'open': open_price,
+            'signal': Signal,
+            'datetime': moment.unix(now).timezone("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"),
+            'timestamp': now
+        })
+
         if Signal == "Buy_Signal":
             print("BUY-Trade")
             message = create_stop_loss_order(exchange, client, market.get('symbol'), market.get(
@@ -242,6 +255,9 @@ def run_ordinary_future_task():
 
         else:
             print("Non-Trade")
+
+        if logs:
+            signal_logs.insert_many(logs)
 
         index = index + 1
         if message != None:
