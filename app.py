@@ -50,8 +50,8 @@ client = Client(API_KEY, SECRET_KEY, base_url="https://fapi.binance.com",
                 proxies={'http': FIXIE_URL, 'https': FIXIE_URL})
 
 client_db = MongoClient(DATABASE_URL)
-symbol_backtest_stat = client_db.binance.symbol_backtest_stat
-position_size_config = client_db.binance.position_size_config
+symbol_backtest_stats = client_db.binance.symbol_backtest_stats
+position_size_configs = client_db.binance.position_size_configs
 signal_logs = client_db.binance.signal_logs
 
 
@@ -194,9 +194,9 @@ def run_ordinary_future_task():
     balance = get_usdt_balance_in_future_wallet(exchange)
     print("Balance", balance)
 
-    db_position_size_config = position_size_config.aggregate(
+    db_position_size_configs = position_size_configs.aggregate(
         [{"$sort": {"time": -1}}])
-    FUTURE_POSITION_SIZE = int(list(db_position_size_config)[
+    FUTURE_POSITION_SIZE = int(list(db_position_size_configs)[
                                0].get('position_size'))
 
     position_size = FUTURE_POSITION_SIZE
@@ -211,7 +211,7 @@ def run_ordinary_future_task():
     pprint.pprint(positions_symbol)
     print("##########################")
 
-    db_markets = symbol_backtest_stat.aggregate(
+    db_markets = symbol_backtest_stats.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
     none_position_market = list(
