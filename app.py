@@ -234,7 +234,7 @@ def run_ordinary_future_task():
         count = len(df_ohlcv)
         open_price = df_ohlcv['open'][count - 1]
 
-        now = int(time.time()) 
+        now = int(time.time())
         logs.append({
             'symbol': market.get('symbol'),
             'open': open_price,
@@ -256,13 +256,13 @@ def run_ordinary_future_task():
         else:
             print("Non-Trade")
 
-        if logs:
-            signal_logs.insert_many(logs)
-
         index = index + 1
         if message != None:
             push_notify_message(LINE_NOTIFY_TOKEN, message)
         print("---------------------------------")
+
+    if logs:
+        signal_logs.insert_many(logs)
 
     print("##########################")
 
