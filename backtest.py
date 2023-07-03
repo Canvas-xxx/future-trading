@@ -31,19 +31,19 @@ exchange = ccxt.binanceusdm({
 })
 
 client = pymongo.MongoClient(DATABASE_URL)
-symbol_backtest_stat = client.binance.symbol_backtest_stat
+symbol_backtest_stats = client.binance.symbol_backtest_stats
 my_trades = client.binance.my_trades
-position_size_config = client.binance.position_size_config
+position_size_configs = client.binance.position_size_configs
 dialy_logs = client.binance.dialy_logs
 
 
 def schedule_backtest_month():
-    db_markets = symbol_backtest_stat.aggregate(
+    db_markets = symbol_backtest_stats.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
     symbols_list = list(map(lambda market: market.get('symbol'), markets))
 
-    db_position_size_config = position_size_config.aggregate(
+    db_position_size_config = position_size_configs.aggregate(
         [{"$sort": {"time": -1}}])
     FUTURE_POSITION_SIZE = int(list(db_position_size_config)[
                                0].get('position_size'))
@@ -138,7 +138,7 @@ def schedule_backtest_month():
         position_sizing = wallet_balance / \
             (count_30_days_success_position + count_30_days_fail_position)
 
-        position_size_config.insert_one(
+        position_size_configs.insert_one(
             {'wallet_balance': wallet_balance, 'position_size': round(position_sizing), 'datetime': date_time, 'time': timestamp})
 
         notify_message += "\n""Success Signal(30 Days) " + \
@@ -178,12 +178,12 @@ def schedule_backtest_month():
 
 
 def schedule_backtest_week():
-    db_markets = symbol_backtest_stat.aggregate(
+    db_markets = symbol_backtest_stats.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
     symbols_list = list(map(lambda market: market.get('symbol'), markets))
 
-    db_position_size_config = position_size_config.aggregate(
+    db_position_size_config = position_size_configs.aggregate(
         [{"$sort": {"time": -1}}])
     FUTURE_POSITION_SIZE = int(list(db_position_size_config)[
                                0].get('position_size'))
@@ -306,12 +306,12 @@ def schedule_backtest_week():
 
 
 def schedule_backtest_daily():
-    db_markets = symbol_backtest_stat.aggregate(
+    db_markets = symbol_backtest_stats.aggregate(
         [{"$sort": {"win_rate_percentage": -1, "total_win": -1, "total_position": -1}}])
     markets = list(db_markets)
     symbols_list = list(map(lambda market: market.get('symbol'), markets))
 
-    db_position_size_config = position_size_config.aggregate(
+    db_position_size_config = position_size_configs.aggregate(
         [{"$sort": {"time": -1}}])
     FUTURE_POSITION_SIZE = int(list(db_position_size_config)[
                                0].get('position_size'))

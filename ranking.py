@@ -20,11 +20,11 @@ exchange = ccxt.binanceusdm({
 })
 
 client = pymongo.MongoClient(DATABASE_URL)
-symbol_backtest_stat = client.binance.symbol_backtest_stat
+symbol_backtest_stats = client.binance.symbol_backtest_stats
 
 def schedule_ranking():
     markets = get_market_list(exchange, 'future', 'USDT')
-    db_markets = symbol_backtest_stat.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
+    db_markets = symbol_backtest_stats.aggregate([{ "$sort": {  "win_rate_percentage": -1, "total_win": -1, "total_position": -1  } }])
     db_markets = list(db_markets)
     markets = markets
 
@@ -85,8 +85,8 @@ def schedule_ranking():
         push_notify_message(LINE_NOTIFY_TOKEN, notify_message)
 
     try:
-        symbol_backtest_stat.drop()
-        symbol_backtest_stat.insert_many(order_ranking_list)
+        symbol_backtest_stats.drop()
+        symbol_backtest_stats.insert_many(order_ranking_list)
         print("Update Symbol Stat")
     except:
         print("Insert Stat Error")
